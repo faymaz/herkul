@@ -1,0 +1,24 @@
+/* stylesheet.css */
+.blink {
+    animation: blink-animation 1s steps(2, start) infinite;
+}
+
+@keyframes blink-animation {
+    to {
+        visibility: hidden;
+    }
+}
+
+.loading-indicator {
+    animation: rotate 2s linear infinite;
+    margin-left: 4px;
+}
+
+@keyframes rotate {
+    from {
+        -rotation-angle: 0deg;
+    }
+    to {
+        -rotation-angle: 360deg;
+    }
+}

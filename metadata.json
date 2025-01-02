@@ -1,0 +1,14 @@
+{
+  "uuid": "herkul@faymaz.github.com",
+  "name": "Herkul",
+  "description": "HerkulFM and Prayer Times based on Diyanet's schedule",
+  "gettext-domain": "herkul",
+  "version": 2,
+  "donations": {
+    "github": "https://github.com/faymaz"
+  },
+  "settings-schema": "org.gnome.shell.extensions.herkul",
+  "shell-version": ["45", "46", "47"],
+  "icon": "icons/icon.svg",
+  "url": "https://github.com/username/herkul"
+}
