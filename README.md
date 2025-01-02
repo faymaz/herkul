@@ -85,6 +85,22 @@ Ayarlarda şunları özelleştirebilirsiniz:
 - 🇺🇸 ABD: Clifton, Costa Mesa, Irvine
 - 🇬🇧 İngiltere: Londra
 
+## Yeni Şehir Ekleme
+
+Yeni şehirler eklemek istiyorsanız, `cities.json` dosyasını düzenleyebilirsiniz:
+
+```json
+{
+  "cities": [
+    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9541/prayer-time-for-istanbul" },
+    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/prayer-time-for-ankara" },
+    // Daha fazla şehir ekleyebilirsiniz...
+  ]
+}
+```
+
+**Not:** Eklediğiniz URL'lerin Diyanet İşleri resmi web sitesindeki doğru sayfalara yönlendirildiğinden emin olun.
+
 ## Sorun Giderme
 
 1. Vakitler görünmüyorsa:
