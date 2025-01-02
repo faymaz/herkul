@@ -121,10 +121,6 @@ Projeye katkıda bulunmak istiyorsanız:
 4. Branch'inizi push edin (`git push origin yeni-ozellik`)
 5. Pull Request oluşturun
 
-## Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.
-
 ## İletişim
 
 - GitHub: [@faymaz](https://github.com/faymaz)
