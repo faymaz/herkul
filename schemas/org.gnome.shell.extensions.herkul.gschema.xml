@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-    <schema id="org.gnome.shell.extensions.herkul" path="/org/gnome/shell/extensions/herkul/">
-        <key name="selected-city" type="s">
-            <default>'İstanbul'</default>
-            <summary>Selected City</summary>
-            <description>The city selected for prayer times</description>
-        </key>
-        <key name="notification-enabled" type="b">
-            <default>true</default>
-            <summary>Enable Notifications</summary>
-            <description>Enable or disable prayer time notifications</description>
-        </key>
-    </schema>
+  <schema id="org.gnome.shell.extensions.herkul" path="/org/gnome/shell/extensions/herkul/">
+    <key name="default-city" type="s">
+      <default>'İstanbul'</default>
+      <summary>Default city for prayer times</summary>
+      <description>The city to show prayer times for</description>
+    </key>
+    <key name="notify-enabled" type="b">
+      <default>true</default>
+      <summary>Enable notifications</summary>
+      <description>Show notifications before prayer times</description>
+    </key>
+    <key name="sound-enabled" type="b">
+      <default>true</default>
+      <summary>Enable sound</summary>
+      <description>Play sound with notifications</description>
+    </key>
+  </schema>
 </schemalist>

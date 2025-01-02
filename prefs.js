@@ -1,4 +1,3 @@
-// prefs.js
 import GObject from 'gi://GObject';
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
@@ -13,59 +12,91 @@ export default class Prefs extends GObject.Object {
     constructor(metadata) {
         super();
         this._metadata = metadata;
+        this._settings = this._getSettings();
+    }
+
+    _getSettings() {
+        const schema = 'org.gnome.shell.extensions.herkul';
+        
+        const schemaDir = GLib.build_filenamev([this._metadata.path, 'schemas']);
+        let schemaSource;
+        
+        try {
+            schemaSource = Gio.SettingsSchemaSource.new_from_directory(
+                schemaDir,
+                Gio.SettingsSchemaSource.get_default(),
+                false
+            );
+        } catch (err) {
+            log(`Failed to load schema from directory: ${err}`);
+            throw err;
+        }
+        
+        const schemaObj = schemaSource.lookup(schema, true);
+        if (!schemaObj) {
+            throw new Error(`Schema ${schema} could not be found for extension ${this._metadata.uuid}`);
+        }
+        
+        return new Gio.Settings({ settings_schema: schemaObj });
     }
 
     fillPreferencesWindow(window) {
-        // Create a preferences page
+        // Tercihler sayfası oluştur
         const page = new Adw.PreferencesPage({
-            title: 'Prayer Times Settings',
+            title: 'Namaz Vakitleri Ayarları',
             icon_name: 'preferences-system-time-symbolic',
         });
 
-        // Create a preferences group for notifications
+        // Bildirimler için tercihler grubu
         const notifyGroup = new Adw.PreferencesGroup({
-            title: 'Notifications',
-            description: 'Configure notification settings'
+            title: 'Bildirimler',
+            description: 'Bildirim ayarlarını yapılandır'
         });
 
-        // Add notification settings
+        // Bildirim ayarları ekle
         const notifySwitch = new Adw.ActionRow({
-            title: 'Enable Notifications',
-            subtitle: 'Show notifications before prayer times'
+            title: 'Bildirimleri Etkinleştir',
+            subtitle: 'Namaz vakitlerinden önce bildirim göster'
         });
 
         const notifyToggle = new Gtk.Switch({
-            active: true,
+            active: this._settings.get_boolean('notify-enabled'),
             valign: Gtk.Align.CENTER,
+        });
+
+        notifyToggle.connect('notify::active', (widget) => {
+            this._settings.set_boolean('notify-enabled', widget.get_active());
         });
 
         notifySwitch.add_suffix(notifyToggle);
         notifyGroup.add(notifySwitch);
 
-        // Add sound settings
+        // Ses ayarları ekle
         const soundSwitch = new Adw.ActionRow({
-            title: 'Enable Sound',
-            subtitle: 'Play sound with notifications'
+            title: 'Sesi Etkinleştir',
+            subtitle: 'Bildirimlerle birlikte ses çal'
         });
 
         const soundToggle = new Gtk.Switch({
-            active: true,
+            active: this._settings.get_boolean('sound-enabled'),
             valign: Gtk.Align.CENTER,
+        });
+
+        soundToggle.connect('notify::active', (widget) => {
+            this._settings.set_boolean('sound-enabled', widget.get_active());
         });
 
         soundSwitch.add_suffix(soundToggle);
         notifyGroup.add(soundSwitch);
 
-        // Add the notification group to the page
         page.add(notifyGroup);
 
-        // Create a preferences group for cities
+        // Şehirler için tercihler grubu
         const citiesGroup = new Adw.PreferencesGroup({
-            title: 'Default City',
-            description: 'Select default city for prayer times'
+            title: 'Varsayılan Şehir',
+            description: 'Namaz vakitleri için varsayılan şehri seçin'
         });
 
-        // Try to load cities from cities.json
         try {
             const citiesPath = GLib.build_filenamev([this._metadata.path, 'cities.json']);
             const [success, contents] = GLib.file_get_contents(citiesPath);
@@ -75,48 +106,37 @@ export default class Prefs extends GObject.Object {
                 const cityNames = citiesData.cities.map(city => city.name);
 
                 const defaultCityRow = new Adw.ComboRow({
-                    title: 'Default City',
+                    title: 'Varsayılan Şehir',
                     model: new Gtk.StringList({
                         strings: cityNames
                     })
                 });
 
+                // Mevcut seçili şehri ayarla
+                const currentCity = this._settings.get_string('default-city');
+                const cityIndex = cityNames.indexOf(currentCity);
+                if (cityIndex !== -1) {
+                    defaultCityRow.selected = cityIndex;
+                }
+
+                // Şehir değiştiğinde ayarları güncelle
+                defaultCityRow.connect('notify::selected', (widget) => {
+                    const selectedCity = cityNames[widget.selected];
+                    this._settings.set_string('default-city', selectedCity);
+                });
+
                 citiesGroup.add(defaultCityRow);
             }
         } catch (error) {
-            log(`Error loading cities: ${error}`);
-            
-            // Add a label to show the error
+            log(`[PrayerTimes] Şehir listesi yüklenirken hata oluştu: ${error}`);
             const errorLabel = new Gtk.Label({
-                label: 'Error loading cities list',
+                label: 'Şehir listesi yüklenirken hata oluştu',
                 css_classes: ['error']
             });
             citiesGroup.add(errorLabel);
         }
 
-        // Add the cities group to the page
         page.add(citiesGroup);
-
-        // Add the page to the window
         window.add(page);
-
-        // Load and apply any saved settings
-        this._loadSettings();
-    }
-
-    _loadSettings() {
-        try {
-            // Load saved settings if they exist
-            const settingsPath = GLib.build_filenamev([this._metadata.path, 'settings.json']);
-            const [success, contents] = GLib.file_get_contents(settingsPath);
-            
-            if (success) {
-                const settings = JSON.parse(new TextDecoder().decode(contents));
-                // Apply loaded settings here
-                log('[PrayerTimes] Settings loaded successfully');
-            }
-        } catch (error) {
-            log(`[PrayerTimes] Error loading settings: ${error}`);
-        }
     }
 }
