@@ -240,13 +240,24 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 let menuItem = new PopupMenu.PopupMenuItem(`${prayerName}: ${time}`);
                 this.menu.addMenuItem(menuItem);
             });
+            // Add separator
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }
     
         // Diğer menü öğeleri
         let radioItem = new PopupMenu.PopupSwitchMenuItem('HerkulFM', this._radioPlaying);
         let cityItem = new PopupMenu.PopupSubMenuMenuItem("Şehir Seç");
-    
+  
+             
+        // Radyo düğmesi
+        radioItem.connect('toggled', () => {
+            this._toggleRadio();
+        });
+        this.menu.addMenuItem(radioItem);
+        
+        // Add separator
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
         // Şehir menüsü
         this._citiesData.cities.forEach(city => {
             let item = new PopupMenu.PopupMenuItem(city.name);
@@ -260,14 +271,19 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             });
             cityItem.menu.addMenuItem(item);
         });
-    
-        // Radyo düğmesi
-        radioItem.connect('toggled', () => {
-            this._toggleRadio();
+        this.menu.addMenuItem(cityItem);        
+        
+        // Add separator
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Add settings button
+        const settingsButton = new PopupMenu.PopupMenuItem('Ayarlar');
+        settingsButton.connect('activate', () => {
+            if (this._extension) {
+                this._extension.openPreferences();
+            }
         });
-    
-        this.menu.addMenuItem(radioItem);
-        this.menu.addMenuItem(cityItem);
+        this.menu.addMenuItem(settingsButton);
     }
 
     async _fetchPrayerTimes() {
