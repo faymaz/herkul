@@ -2,7 +2,7 @@
 
 # Herkul GNOME Shell Uzantısı
 
-Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır. Bu uzantı, Diyanet İşleri Başkanlığı'nın web sitesinden namaz vakitlerini gösterir ve HerkulFM radyosunu dinleme imkanı sunar.
+Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır. Bu uzantı, Diyanet İşleri Başkanlığı'nın web sitesinden namaz vakitlerini gösterir ve Herkul radyosunu dinleme imkanı sunar.
 
 ## Herkul
 
@@ -38,7 +38,7 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 
 1. Bu repoyu klonlayın:
 ```bash
-git clone https://github.com/username/herkul.git
+git clone https://github.com/faymaz/herkul.git
 ```
 
 2. Uzantı klasörüne kopyalayın:
