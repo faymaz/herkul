@@ -9,6 +9,6 @@
   },
   "settings-schema": "org.gnome.shell.extensions.herkul",
   "shell-version": ["45", "46", "47"],
-  "icon": "icons/herkulfm.png",
+  "icon": "icons/herkul.png",
   "url": "https://github.com/faymaz/herkul"
 }

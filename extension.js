@@ -95,7 +95,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         try {
             this._icon = new St.Icon({
-                gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', 'herkulfm.png'])),
+                gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', 'herkul.png'])),
                 style_class: 'system-status-icon'
             });
         } catch (error) {
@@ -244,13 +244,24 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }
     
+        let radioBox = new St.BoxLayout({ style_class: 'popup-menu-item' });
+        
+        let radioIcon = new St.Icon({
+            gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', 'herkul.png'])),
+            style_class: 'popup-menu-icon',
+            icon_size: 16
+        });
+        
         let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radyo', this._radioPlaying);
-        let cityItem = new PopupMenu.PopupSubMenuMenuItem("Şehir Seç");
-    
+        
+        radioItem.insert_child_at_index(radioIcon, 1);
+        
         radioItem.connect('toggled', () => {
             this._toggleRadio();
         });
         this.menu.addMenuItem(radioItem);
+        
+        let cityItem = new PopupMenu.PopupSubMenuMenuItem("Şehir Seç");
         
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
