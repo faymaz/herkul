@@ -63,7 +63,7 @@ Uzantı kurulduktan sonra, GNOME Shell'in üst panelinde bir simge görünecekti
 - Güncel namaz vakitleri
 - Bir sonraki namaz vaktine kalan süre
 - Şehir seçim menüsü
-- HerkulFM radyo açma/kapama düğmesi
+- Herkul radyo açma/kapama düğmesi
 
 görüntülenecektir.
 
