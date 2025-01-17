@@ -9,23 +9,23 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-// const prayerMap = {
-//     'imsak': 'Fajr',
-//     'gunes': 'Sunrise',
-//     'ogle': 'Dhuhr',
-//     'ikindi': 'Asr',
-//     'aksam': 'Maghrib',
-//     'yatsi': 'Isha'
-// };
-
 const prayerMap = {
-    'imsak': 'İmsak',
-    'gunes': 'Güneş',
-    'ogle': 'Öğle',
-    'ikindi': 'İkindi',
-    'aksam': 'Akşam',
-    'yatsi': 'Yatsı'
+    'imsak': 'Fajr',
+    'gunes': 'Sunrise',
+    'ogle': 'Dhuhr',
+    'ikindi': 'Asr',
+    'aksam': 'Maghrib',
+    'yatsi': 'Isha'
 };
+
+// const prayerMap = {
+//     'imsak': 'İmsak',
+//     'gunes': 'Güneş',
+//     'ogle': 'Öğle',
+//     'ikindi': 'İkindi',
+//     'aksam': 'Akşam',
+//     'yatsi': 'Yatsı'
+// };
 
 function loadCitiesData(extensionPath) {
     try {
