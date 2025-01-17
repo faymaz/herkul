@@ -11,18 +11,23 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
         // Create preferences page
         const page = new Adw.PreferencesPage({
+            //title: 'Namaz Vakitleri Ayarları',
             title: 'Prayer Times Settings',
             icon_name: 'preferences-system-time-symbolic',
         });
 
         // Preferences group for notifications
         const notifyGroup = new Adw.PreferencesGroup({
+            //title: 'Bildirimler',
+		    //description: 'Bildirim ayarlarını yapılandır'
             title: 'Notifications',
             description: 'Configure notification settings'
         });
 
         // Add notification settings
         const notifySwitch = new Adw.ActionRow({
+            //title: 'Bildirimleri Etkinleştir',
+		    //subtitle: 'Namaz vakitlerinden önce bildirim göster'
             title: 'Enable Notifications',
             subtitle: 'Show notifications before prayer times'
         });
@@ -41,6 +46,8 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
         // Add sound settings
         const soundSwitch = new Adw.ActionRow({
+            //title: 'Sesi Etkinleştir',
+            //subtitle: 'Bildirimlerle birlikte ses çal'
             title: 'Enable Sound',
             subtitle: 'Play sound with notifications'
         });
@@ -61,6 +68,8 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
         // Preferences group for cities
         const citiesGroup = new Adw.PreferencesGroup({
+           //title: 'Varsayılan Şehir',
+           //description: 'Namaz vakitleri için varsayılan şehri seçin'
             title: 'Default City',
             description: 'Select default city for prayer times'
         });
@@ -74,6 +83,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
                 const cityNames = citiesData.cities.map(city => city.name);
 
                 const defaultCityRow = new Adw.ComboRow({
+                    //title: 'Varsayılan Şehir',
                     title: 'Default City',
                     model: new Gtk.StringList({
                         strings: cityNames
@@ -96,8 +106,10 @@ export default class HerkulPreferences extends ExtensionPreferences {
                 citiesGroup.add(defaultCityRow);
             }
         } catch (error) {
+            //console.error('[PrayerTimes] Şehir listesi yüklenirken hata oluştu:', error);
             console.error('[PrayerTimes] Error loading city list:', error);
             const errorLabel = new Gtk.Label({
+                //label: 'Şehir listesi yüklenirken hata oluştu',
                 label: 'Error loading city list',
                 css_classes: ['error']
             });

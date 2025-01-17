@@ -85,6 +85,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
     
         this._label = new St.Label({
+            //text: 'Yükleniyor...',
             text: 'Loading...',
             y_expand: true,
             y_align: 2
