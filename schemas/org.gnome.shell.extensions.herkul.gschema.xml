@@ -2,7 +2,7 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.herkul" path="/org/gnome/shell/extensions/herkul/">
     <key name="default-city" type="s">
-      <default>'İstanbul'</default>
+      <default>'Istanbul'</default>
       <summary>Default city for prayer times</summary>
       <description>The city to show prayer times for</description>
     </key>

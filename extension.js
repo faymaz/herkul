@@ -1,15 +1,22 @@
-// extension.js
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import Gst from 'gi://Gst';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-const Gettext = imports.gettext;
+
+// const prayerMap = {
+//     'imsak': 'Fajr',
+//     'gunes': 'Sunrise',
+//     'ogle': 'Dhuhr',
+//     'ikindi': 'Asr',
+//     'aksam': 'Maghrib',
+//     'yatsi': 'Isha'
+// };
 
 const prayerMap = {
     'imsak': 'İmsak',
@@ -28,39 +35,10 @@ function loadCitiesData(extensionPath) {
         let data = JSON.parse(citiesJson);
         return data;
     } catch (error) {
-        log(`[PrayerTimes] Error loading cities: ${error}`);
+        console.error('[PrayerTimes] Error loading cities:', error);
         return null;
     }
 }
-
-function calculateTimeDifference(currentTime, targetTime, isNextDay = false) {
-    let [targetHour, targetMinute] = targetTime.split(':').map(Number);
-    let currentHour = currentTime.get_hour();
-    let currentMinute = currentTime.get_minute();
-
-    let targetMinutes = targetHour * 60 + targetMinute;
-    let currentMinutes = currentHour * 60 + currentMinute;
-
-    if (isNextDay) {
-        targetMinutes += 24 * 60;
-    }
-
-    let diffMinutes = targetMinutes - currentMinutes;
-    return {
-        hours: Math.floor(diffMinutes / 60),
-        minutes: diffMinutes % 60
-    };
-}
-
-const initTranslations = (extension) => {
-    let localeDir = extension.dir.get_child('locale');
-    if (localeDir.query_exists(null)) {
-        Gettext.bindtextdomain('herkul', localeDir.get_path());
-        Gettext.textdomain('herkul');
-    }
-};
-
-const _ = Gettext.gettext;
 
 const PrayerTimesIndicator = GObject.registerClass(
 class PrayerTimesIndicator extends PanelMenu.Button {
@@ -78,7 +56,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._citiesData = loadCitiesData(this._extension.path);
         
         // Get initial settings
-        this._selectedCity = this._settings.get_string('default-city') || this._citiesData?.cities[0]?.name || "İstanbul";
+        this._selectedCity = this._settings.get_string('default-city') || this._citiesData?.cities[0]?.name || "Istanbul";
         this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
         this._soundEnabled = this._settings.get_boolean('sound-enabled');
         
@@ -99,7 +77,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 style_class: 'system-status-icon'
             });
         } catch (error) {
-            log(`[PrayerTimes] Error loading icon: ${error}`);
+            console.error('[PrayerTimes] Error loading icon:', error);
             this._icon = new St.Icon({
                 icon_name: 'preferences-system-time-symbolic',
                 style_class: 'system-status-icon'
@@ -107,7 +85,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
     
         this._label = new St.Label({
-            text: 'Yükleniyor...',
+            text: 'Loading...',
             y_expand: true,
             y_align: 2
         });
@@ -120,20 +98,15 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             visible: false
         });
     
-        try {
-            let hbox = new St.BoxLayout({style_class: 'panel-status-menu-box'});
-            hbox.add_child(this._icon);
-            hbox.add_child(this._label);
-            hbox.add_child(this._fetchingIndicator);
-            this.add_child(hbox);
-        } catch (error) {
-            log(`[PrayerTimes] Error creating panel layout: ${error}`);
-        }
+        let hbox = new St.BoxLayout({style_class: 'panel-status-menu-box'});
+        hbox.add_child(this._icon);
+        hbox.add_child(this._label);
+        hbox.add_child(this._fetchingIndicator);
+        this.add_child(hbox);
     
         this._buildMenu();
         this._startUpdating();
     }
-
     _onSettingsChanged(settings, key) {
         switch(key) {
             case 'default-city':
@@ -153,21 +126,21 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     _toggleRadio() {
         if (this._radioPlaying) {
             if (this._radioPlayer) {
-                this._radioPlayer.set_state(imports.gi.Gst.State.NULL);
+                this._radioPlayer.set_state(Gst.State.NULL);
                 this._radioPlayer = null;
             }
             this._radioPlaying = false;
         } else {
             try {
-                imports.gi.Gst.init(null);
-                this._radioPlayer = imports.gi.Gst.ElementFactory.make('playbin', 'radio');
+                Gst.init(null);
+                this._radioPlayer = Gst.ElementFactory.make('playbin', 'radio');
                 if (this._radioPlayer) {
                     this._radioPlayer.set_property('uri', 'https://s1.wohooo.net/proxy/herkulfo/stream');
-                    this._radioPlayer.set_state(imports.gi.Gst.State.PLAYING);
+                    this._radioPlayer.set_state(Gst.State.PLAYING);
                     this._radioPlaying = true;
                 }
             } catch (error) {
-                log(`[PrayerTimes] Radio error: ${error}`);
+                console.error(`[PrayerTimes] Radio error: ${error}`);
             }
         }
     }
@@ -187,13 +160,14 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             });
             this._retryCount = 0;
         } catch (error) {
-            log(`[PrayerTimes] Error initializing HTTP session: ${error}`);
+            console.error(`[PrayerTimes] Error initializing HTTP session: ${error}`);
             if (this._retryCount < this._maxRetries) {
                 this._retryCount++;
-                GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
+                const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
                     this._initHttpSession();
                     return GLib.SOURCE_REMOVE;
                 });
+                this._activeTimers.add(timerId);
             }
         }
     }
@@ -206,7 +180,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._fetchingIndicator.add_style_class_name('loading-indicator');
                 }
             } catch (error) {
-                log(`[PrayerTimes] Error showing loading indicator: ${error}`);
+                console.error(`[PrayerTimes] Error showing loading indicator: ${error}`);
             }
         }
     }
@@ -219,7 +193,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._fetchingIndicator.remove_style_class_name('loading-indicator');
                 }
             } catch (error) {
-                log(`[PrayerTimes] Error hiding loading indicator: ${error}`);
+                console.error(`[PrayerTimes] Error hiding loading indicator: ${error}`);
             }
         }
     }
@@ -231,7 +205,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     _buildMenu() {
         this.menu.removeAll();
         if (!this._citiesData) {
-            log('[PrayerTimes] No cities data available');
+            console.debug('[PrayerTimes] No cities data available');
             return;
         }
     
@@ -252,7 +226,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             icon_size: 16
         });
         
-        let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radyo', this._radioPlaying);
+        //let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radyo', this._radioPlaying);
+        let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radio', this._radioPlaying);
         
         radioItem.insert_child_at_index(radioIcon, 1);
         
@@ -261,8 +236,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(radioItem);
         
-        let cityItem = new PopupMenu.PopupSubMenuMenuItem("Şehir Seç");
-        
+        //let cityItem = new PopupMenu.PopupSubMenuMenuItem("Şehir Seç");
+        let cityItem = new PopupMenu.PopupSubMenuMenuItem("Select City");
+
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         this._citiesData.cities.forEach(city => {
@@ -282,7 +258,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        const settingsButton = new PopupMenu.PopupMenuItem('Ayarlar');
+        //const settingsButton = new PopupMenu.PopupMenuItem('Ayarlar');
+        const settingsButton = new PopupMenu.PopupMenuItem('Settings');
         settingsButton.connect('activate', () => {
             if (this._extension) {
                 this._extension.openPreferences();
@@ -293,13 +270,13 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 
     async _fetchPrayerTimes() {
         if (!this._citiesData) {
-            log('[PrayerTimes] No cities data available');
+            console.debug('[PrayerTimes] No cities data available');
             return;
         }
     
         let cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
         if (!cityData) {
-            log(`[PrayerTimes] City not found: ${this._selectedCity}`);
+            console.warn(`[PrayerTimes] City not found: ${this._selectedCity}`);
             return;
         }
         
@@ -307,7 +284,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         try {
             if (!this._httpSession) {
-                log('[PrayerTimes] HTTP session not initialized, retrying...');
+                console.debug('[PrayerTimes] HTTP session not initialized, retrying...');
                 this._initHttpSession();
                 return;
             }
@@ -349,7 +326,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._updateDisplay();
             this._hideLoading();
         } catch (error) {
-            log(`[PrayerTimes] Error fetching prayer times: ${error}`);
+            console.error(`[PrayerTimes] Error fetching prayer times: ${error}`);
             this._hideLoading();
             if (error.message.includes('not initialized') || error.message.includes('Xwayland')) {
                 if (this._retryCount < this._maxRetries) {
@@ -360,7 +337,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     });
                 }
             }
-            this._label.text = 'Vakitler alınamadı';
+            //this._label.text = 'Vakitler alınamadı';
+            this._label.text = 'Failed to load prayer times';
         }
     }
 
@@ -372,17 +350,19 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     
         try {
             const timeInfo = this._calculateTimeLeft(nextPrayer.time, nextPrayer.isNextDay);
-            const prayerName = _(nextPrayer.name);
             
             if (this._label && !this._label.is_finalized?.()) {
-                this._label.text = `${prayerName}: ${timeInfo.formatted}`;
+                this._label.text = `${nextPrayer.name}: ${timeInfo.hours}s ${timeInfo.minutes}d`;
                 
                 if (timeInfo.totalMinutes >= 15 && timeInfo.totalMinutes <= 20) {
-                    this._showNotification(prayerName, timeInfo.totalMinutes);
+                    this._showNotification(nextPrayer.name, timeInfo.totalMinutes);
                 }
             }
         } catch (error) {
-            log(`[PrayerTimes] Display update error: ${error}`);
+            console.error('[PrayerTimes] Display update error:', error);
+            if (this._label && !this._label.is_finalized?.()) {
+                this._label.text = 'Error';
+            }
         }
     }
 
@@ -397,7 +377,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 try {
                     GLib.source_remove(timerId);
                 } catch (error) {
-                    log(`[PrayerTimes] Error removing timer ${timerId}: ${error}`);
+                    console.error(`[PrayerTimes] Error removing timer ${timerId}: ${error}`);
                 }
             });
             this._activeTimers.clear();
@@ -412,7 +392,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                         this[widgetName].destroy();
                     }
                 } catch (error) {
-                    log(`[PrayerTimes] Error destroying ${widgetName}: ${error}`);
+                    console.error(`[PrayerTimes] Error destroying ${widgetName}: ${error}`);
                 }
                 this[widgetName] = null;
             }
@@ -495,17 +475,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 const soundFile = Gio.File.new_for_path(soundPath);
                 
                 if (soundFile.query_exists(null)) {
-                    imports.gi.Gst.init(null);
-                    this._player = imports.gi.Gst.ElementFactory.make('playbin', 'player');
+                    Gst.init(null);
+                    this._player = Gst.ElementFactory.make('playbin', 'player');
                     
                     if (this._player) {
                         const uri = soundFile.get_uri();
                         this._player.set_property('uri', uri);
-                        this._player.set_state(imports.gi.Gst.State.PLAYING);
+                        this._player.set_state(Gst.State.PLAYING);
                         
                         GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
                             if (this._player) {
-                                this._player.set_state(imports.gi.Gst.State.NULL);
+                                this._player.set_state(Gst.State.NULL);
                                 this._player = null;
                             }
                             this._isPlayingSound = false;
@@ -514,7 +494,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     }
                 }
             } catch (error) {
-                log(`[PrayerTimes] Error playing sound: ${error}`);
+                console.error(`[PrayerTimes] Error playing sound: ${error}`);
                 this._isPlayingSound = false;
             }
         }
@@ -535,7 +515,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._activeTimers.add(timerId);
             return timerId;
         } catch (error) {
-            log(`[PrayerTimes] Error adding timer: ${error}`);
+            console.error(`[PrayerTimes] Error adding timer: ${error}`);
             return null;
         }
     }
@@ -553,10 +533,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 return GLib.SOURCE_CONTINUE;
             }, 60);
         } catch (error) {
-            log(`[PrayerTimes] Error starting updates: ${error}`);
+            console.error(`[PrayerTimes] Error starting updates: ${error}`);
         }
     }
-
     destroy() {
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
@@ -565,75 +544,85 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         this._isDestroyed = true;
         
-        try {
-            this._cleanupTimers();
-            
-            if (this._httpSession) {
-                try {
-                    this._httpSession.abort();
-                } catch (error) {
-                    log(`[PrayerTimes] Error aborting HTTP session: ${error}`);
+        // Clear all timeouts
+        if (this._activeTimers) {
+            this._activeTimers.forEach(timerId => {
+                if (timerId) {
+                    GLib.source_remove(timerId);
                 }
-                this._httpSession = null;
-            }
-            
-            if (this._radioPlayer) {
-                this._radioPlayer.set_state(imports.gi.Gst.State.NULL);
-                this._radioPlayer = null;
-            }
-
-            this._cleanupUI();
-
-            this._prayerTimes = {};
-            this._isPlayingSound = false;
-            this._isBlinking = false;
-            this._timeoutSource = null;
-        } catch (error) {
-            log(`[PrayerTimes] Error during cleanup: ${error}`);
-        } finally {
-            super.destroy();
+            });
+            this._activeTimers.clear();
         }
+
+        if (this._timeoutSource) {
+            GLib.source_remove(this._timeoutSource);
+            this._timeoutSource = null;
+        }
+        
+        // Cleanup HTTP session
+        if (this._httpSession) {
+            this._httpSession.abort();
+            this._httpSession = null;
+        }
+        
+        // Cleanup radio player
+        if (this._radioPlayer) {
+            this._radioPlayer.set_state(Gst.State.NULL);
+            this._radioPlayer = null;
+        }
+
+        // Cleanup UI elements
+        if (this._icon) {
+            this._icon.destroy();
+            this._icon = null;
+        }
+
+        if (this._label) {
+            this._label.destroy();
+            this._label = null;
+        }
+
+        if (this._fetchingIndicator) {
+            this._fetchingIndicator.destroy();
+            this._fetchingIndicator = null;
+        }
+
+        this._prayerTimes = {};
+        this._isPlayingSound = false;
+        this._isBlinking = false;
+
+        super.destroy();
     }
 });
 
+function calculateTimeDifference(currentTime, targetTime, isNextDay = false) {
+    let [targetHour, targetMinute] = targetTime.split(':').map(Number);
+    let currentHour = currentTime.get_hour();
+    let currentMinute = currentTime.get_minute();
+
+    let targetMinutes = targetHour * 60 + targetMinute;
+    let currentMinutes = currentHour * 60 + currentMinute;
+
+    if (isNextDay) {
+        targetMinutes += 24 * 60;
+    }
+
+    let diffMinutes = targetMinutes - currentMinutes;
+    return {
+        hours: Math.floor(diffMinutes / 60),
+        minutes: diffMinutes % 60
+    };
+}
+
 export default class PrayerTimesExtension extends Extension {
-    constructor(metadata) {
-        super(metadata);
-    }
-
-    getSettings() {
-        const schema = 'org.gnome.shell.extensions.herkul';
-        
-        const schemaDir = GLib.build_filenamev([this.path, 'schemas']);
-        let schemaSource;
-        
-        try {
-            schemaSource = Gio.SettingsSchemaSource.new_from_directory(
-                schemaDir,
-                Gio.SettingsSchemaSource.get_default(),
-                false
-            );
-        } catch (err) {
-            log(`Failed to load schema from directory: ${err}`);
-            throw err;
-        }
-        
-        const schemaObj = schemaSource.lookup(schema, true);
-        if (!schemaObj) {
-            throw new Error(`Schema ${schema} could not be found for extension ${this.uuid}`);
-        }
-        
-        return new Gio.Settings({ settings_schema: schemaObj });
-    }
-
     enable() {
-        log('[PrayerTimes] Enabling extension');
+        console.debug('[PrayerTimes] Enabling extension');
         this._indicator = new PrayerTimesIndicator(this);
         Main.panel.addToStatusArea('prayer-times', this._indicator);
     }
 
     disable() {
-        log('[PrayerTimes] Disabling extension');
+        console.debug('[PrayerTimes] Disabling extension');
         if (this._indicator) {
             this._indicator.destroy();
             this._indicator = null;

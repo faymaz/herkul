@@ -1,7 +1,7 @@
 {
   "uuid": "herkul@faymaz.github.com",
   "name": "Herkul",
-  "description": "Herkul Radyo and Prayer Times based on Diyanet's schedule",
+  "description": "Prayer times based on diyanet.gov.tr's schedule and Herkul Radio streaming from wohooo.net. Features include prayer time notifications, radio streaming, and multi-city support.",
   "gettext-domain": "herkul",
   "version": 2,
   "donations": {
