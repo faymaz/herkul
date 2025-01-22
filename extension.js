@@ -8,6 +8,12 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+// Eski
+//import Gettext from 'gi://Gettext';
+// Yeni - bu satırları kullanmalıyız
+const Gettext = imports.gettext;
+const Domain = Gettext.domain('herkul');
+const _ = Domain.gettext;
 
 const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
     let [targetHour, targetMinute] = targetTime.split(':').map(Number);
@@ -28,23 +34,24 @@ const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => 
     };
 };
 
-const prayerMap = {
-    'imsak': 'Fajr',
-    'gunes': 'Sunrise',
-    'ogle': 'Dhuhr',
-    'ikindi': 'Asr',
-    'aksam': 'Maghrib',
-    'yatsi': 'Isha'
-};
-
 // const prayerMap = {
-//     'imsak': 'İmsak',
-//     'gunes': 'Güneş',
-//     'ogle': 'Öğle',
-//     'ikindi': 'İkindi',
-//     'aksam': 'Akşam',
-//     'yatsi': 'Yatsı'
+//     'imsak': _("Fajr"),
+//     'gunes': _("Sunrise"),
+//     'ogle': _("Dhuhr"),
+//     'ikindi': _("Asr"),
+//     'aksam': _("Maghrib"),
+//     'yatsi': _("Isha")
 // };
+function getPrayerMap() {
+    return {
+        'imsak': _("Fajr"),
+        'gunes': _("Sunrise"),
+        'ogle': _("Dhuhr"),
+        'ikindi': _("Asr"),
+        'aksam': _("Maghrib"),
+        'yatsi': _("Isha")
+    };
+}
 
 function loadCitiesData(extensionPath) {
     try {
@@ -56,6 +63,15 @@ function loadCitiesData(extensionPath) {
     } catch (error) {
         console.error('[PrayerTimes] Error loading cities:', error);
         return null;
+    }
+}
+
+// Gettext için yardımcı fonksiyon
+function initTranslations(extension) {
+    let localeDir = extension.dir.get_child('locale');
+    
+    if (localeDir.query_exists(null)) {
+        Gettext.bindtextdomain('herkul', localeDir.get_path());
     }
 }
 
@@ -102,7 +118,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 style_class: 'system-status-icon'
             });
         }
-    
+        // this._label.text = _("Loading...");
+
         this._label = new St.Label({
             //text: 'Yükleniyor...',
             text: 'Loading...',
@@ -126,21 +143,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     
         this._buildMenu();
         this._startUpdating();
-    }
-    _onSettingsChanged(settings, key) {
-        switch(key) {
-            case 'default-city':
-                this._selectedCity = this._settings.get_string('default-city');
-                this._fetchPrayerTimes();
-                this._rebuildMenu();
-                break;
-            case 'notify-enabled':
-                this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
-                break;
-            case 'sound-enabled':
-                this._soundEnabled = this._settings.get_boolean('sound-enabled');
-                break;
-        }
     }
     
     _toggleRadio() {
@@ -218,6 +220,51 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
     }
 
+    _loadTranslations(lang) {
+        let locale = lang || 'en';
+        let localeDir = this._extension.dir.get_child('locale');
+        
+        try {
+            GLib.setenv('LANGUAGE', locale, true);
+            Gettext.bindtextdomain('herkul', localeDir.get_path());
+            Gettext.textdomain('herkul');
+            Gettext.get_language_names();
+        } catch (e) {
+            console.error('[PrayerTimes] Error loading translations:', e);
+        }
+    }
+
+    _onSettingsChanged(settings, key) {
+        switch(key) {
+            case 'language':
+                const newLang = this._settings.get_string('language');
+                this._loadTranslations(newLang);
+                this._updateDisplay();
+                this._rebuildMenu();
+                break;
+            case 'default-city':
+                this._selectedCity = this._settings.get_string('default-city');
+                this._fetchPrayerTimes();
+                this._rebuildMenu();
+                break;
+            case 'notify-enabled':
+                this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
+                break;
+            case 'sound-enabled':
+                this._soundEnabled = this._settings.get_boolean('sound-enabled');
+                break;
+        }
+    }
+
+    _updateLabels() {
+        // Tüm statik metinleri güncelle
+        if (this._label) {
+            this._label.text = _('Loading...');
+        }
+        // Vakitleri güncelle
+        this._updateDisplay();
+    }
+
     _rebuildMenu() {
         this._buildMenu();
     }
@@ -228,10 +275,11 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             console.debug('[PrayerTimes] No cities data available');
             return;
         }
-    
+        let prayerNames = getPrayerMap();
+
         if (this._prayerTimes && Object.keys(this._prayerTimes).length > 0) {
             Object.entries(this._prayerTimes).forEach(([name, time]) => {
-                let prayerName = prayerMap[name];
+                let prayerName = prayerNames[name];
                 let menuItem = new PopupMenu.PopupMenuItem(`${prayerName}: ${time}`);
                 this.menu.addMenuItem(menuItem);
             });
@@ -247,8 +295,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         
         //let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radyo', this._radioPlaying);
-        let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radio', this._radioPlaying);
-        
+        let radioItem = new PopupMenu.PopupSwitchMenuItem(_('Herkul Radio'), this._radioPlaying);
+
         radioItem.insert_child_at_index(radioIcon, 1);
         
         radioItem.connect('toggled', () => {
@@ -256,9 +304,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(radioItem);
         
-        //let cityItem = new PopupMenu.PopupSubMenuMenuItem("Şehir Seç");
-        let cityItem = new PopupMenu.PopupSubMenuMenuItem("Select City");
-
+        let cityItem = new PopupMenu.PopupSubMenuMenuItem(_("Select City"));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         this._citiesData.cities.forEach(city => {
@@ -277,9 +323,33 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(cityItem);        
         
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        // Add language submenu
+        let langItem = new PopupMenu.PopupSubMenuMenuItem(_("Language"));
+        
+        const languages = [
+            { id: 'en', name: 'English' },
+            { id: 'tr', name: 'Türkçe' },
+            { id: 'de', name: 'Deutsch' }
+        ];
 
-        //const settingsButton = new PopupMenu.PopupMenuItem('Ayarlar');
-        const settingsButton = new PopupMenu.PopupMenuItem('Settings');
+        languages.forEach(lang => {
+            let item = new PopupMenu.PopupMenuItem(lang.name);
+            if (this._settings.get_string('language') === lang.id) {
+                item.setOrnament(PopupMenu.Ornament.DOT);
+            }
+            item.connect('activate', () => {
+                this._settings.set_string('language', lang.id);
+                this._loadTranslations(lang.id);
+                this._rebuildMenu();
+            });
+            langItem.menu.addMenuItem(item);
+        });
+
+        this.menu.addMenuItem(langItem);
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Settings button at the end
+        const settingsButton = new PopupMenu.PopupMenuItem(_('Settings'));
         settingsButton.connect('activate', () => {
             if (this._extension) {
                 this._extension.openPreferences();
@@ -427,21 +497,21 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         let currentTime = GLib.DateTime.new_now_local();
         let currentTimeString = currentTime.format('%H:%M');
         let prayers = Object.entries(this._prayerTimes);
+        let prayerNames = getPrayerMap(); // Her seferinde güncel çevirileri al
         
         for (let [name, time] of prayers) {
             if (time > currentTimeString) {
-                return {name: prayerMap[name], time, isNextDay: false};
+                return {name: prayerNames[name], time, isNextDay: false};
             }
         }
     
         let firstPrayer = prayers[0];
         return {
-            name: prayerMap[firstPrayer[0]],
+            name: prayerNames[firstPrayer[0]],
             time: firstPrayer[1],
             isNextDay: true
         };
     }
-
     _calculateTimeLeft(prayerTime, isNextDay = false) {
         let currentTime = GLib.DateTime.new_now_local();
         let diff = calculateTimeDifference(currentTime, prayerTime, isNextDay);
@@ -597,6 +667,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 export default class PrayerTimesExtension extends Extension {
     enable() {
         console.debug('[PrayerTimes] Enabling extension');
+        initTranslations(this);
         this._indicator = new PrayerTimesIndicator(this);
         Main.panel.addToStatusArea('prayer-times', this._indicator);
     }

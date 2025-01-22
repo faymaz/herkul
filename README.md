@@ -1,6 +1,6 @@
 ![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.herkul)
 
-# Herkul GNOME Shell Uzantısı
+# Herkul (https://herkul.org/) GNOME Shell Uzantısı
 
 Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır. Bu uzantı, Diyanet İşleri Başkanlığı'nın web sitesinden namaz vakitlerini gösterir ve Herkul radyosunu dinleme imkanı sunar.
 

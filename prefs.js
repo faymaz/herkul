@@ -5,31 +5,116 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+const Gettext = imports.gettext;
+const Domain = Gettext.domain('herkul');
+const _ = Domain.gettext;
+
 export default class HerkulPreferences extends ExtensionPreferences {
+    // Initialize translations
+    _initTranslations() {
+        let localeDir = this.dir.get_child('locale');
+        
+        try {
+            // Get current language from settings
+            const settings = this.getSettings();
+            const currentLang = settings?.get_string('language') || 'en';
+            
+            // Set language environment
+            GLib.setenv('LANGUAGE', currentLang, true);
+            
+            if (localeDir.query_exists(null)) {
+                Gettext.bindtextdomain('herkul', localeDir.get_path());
+            }
+        } catch (error) {
+            console.error('[PrayerTimes] Translation initialization error:', error);
+        }
+    }
+
+    // Load specific language
+    _loadTranslations(lang) {
+        try {
+            GLib.setenv('LANGUAGE', lang, true);
+            // Rebuild the entire preferences window
+            this.fillPreferencesWindow(this._window);
+        } catch (error) {
+            console.error('[PrayerTimes] Error changing language:', error);
+        }
+    }
+
+
     fillPreferencesWindow(window) {
+        this._window = window;
+        this._initTranslations();
         const settings = this.getSettings();
 
         // Create preferences page
         const page = new Adw.PreferencesPage({
-            //title: 'Namaz Vakitleri Ayarları',
-            title: 'Prayer Times Settings',
+            title: _('Prayer Times Settings'),
             icon_name: 'preferences-system-time-symbolic',
         });
 
-        // Preferences group for notifications
-        const notifyGroup = new Adw.PreferencesGroup({
-            //title: 'Bildirimler',
-		    //description: 'Bildirim ayarlarını yapılandır'
-            title: 'Notifications',
-            description: 'Configure notification settings'
+        // Language settings group
+        const langGroup = this._createLanguageGroup(settings);
+        page.add(langGroup);
+
+        // Notification settings group
+        const notifyGroup = this._createNotificationGroup(settings);
+        page.add(notifyGroup);
+
+        // City settings group
+        const cityGroup = this._createCityGroup(settings);
+        page.add(cityGroup);
+
+        window.add(page);
+    }
+
+    _createLanguageGroup(settings) {
+        const langGroup = new Adw.PreferencesGroup({
+            title: _('Language'),
+            description: _('Select interface language')
         });
 
-        // Add notification settings
+        const languages = [
+            { id: 'en', name: 'English' },
+            { id: 'tr', name: 'Türkçe' },
+            { id: 'de', name: 'Deutsch' }
+        ];
+
+        const langRow = new Adw.ComboRow({
+            title: _('Interface Language'),
+            model: new Gtk.StringList({
+                strings: languages.map(lang => lang.name)
+            })
+        });
+
+        // Set current language
+        const currentLang = settings.get_string('language');
+        const langIndex = languages.findIndex(lang => lang.id === currentLang);
+        if (langIndex !== -1) {
+            langRow.selected = langIndex;
+        }
+
+        // Handle language change
+        langRow.connect('notify::selected', (widget) => {
+            const selectedLang = languages[widget.selected].id;
+            settings.set_string('language', selectedLang);
+            this._loadTranslations(selectedLang);
+        });
+
+        langGroup.add(langRow);
+        return langGroup;
+    }
+
+    _createNotificationGroup(settings) {
+        const notifyGroup = new Adw.PreferencesGroup({
+            title: _('Notifications'),
+            description: _('Configure notification settings')
+        });
+
+        // Notification switch
         const notifySwitch = new Adw.ActionRow({
-            //title: 'Bildirimleri Etkinleştir',
-		    //subtitle: 'Namaz vakitlerinden önce bildirim göster'
-            title: 'Enable Notifications',
-            subtitle: 'Show notifications before prayer times'
+            title: _('Enable Notifications'),
+            subtitle: _('Show notifications before prayer times')
         });
 
         const notifyToggle = new Gtk.Switch({
@@ -44,12 +129,10 @@ export default class HerkulPreferences extends ExtensionPreferences {
         notifySwitch.add_suffix(notifyToggle);
         notifyGroup.add(notifySwitch);
 
-        // Add sound settings
+        // Sound switch
         const soundSwitch = new Adw.ActionRow({
-            //title: 'Sesi Etkinleştir',
-            //subtitle: 'Bildirimlerle birlikte ses çal'
-            title: 'Enable Sound',
-            subtitle: 'Play sound with notifications'
+            title: _('Enable Sound'),
+            subtitle: _('Play sound with notifications')
         });
 
         const soundToggle = new Gtk.Switch({
@@ -64,14 +147,13 @@ export default class HerkulPreferences extends ExtensionPreferences {
         soundSwitch.add_suffix(soundToggle);
         notifyGroup.add(soundSwitch);
 
-        page.add(notifyGroup);
+        return notifyGroup;
+    }
 
-        // Preferences group for cities
+    _createCityGroup(settings) {
         const citiesGroup = new Adw.PreferencesGroup({
-           //title: 'Varsayılan Şehir',
-           //description: 'Namaz vakitleri için varsayılan şehri seçin'
-            title: 'Default City',
-            description: 'Select default city for prayer times'
+            title: _('Default City'),
+            description: _('Select default city for prayer times')
         });
 
         try {
@@ -83,21 +165,20 @@ export default class HerkulPreferences extends ExtensionPreferences {
                 const cityNames = citiesData.cities.map(city => city.name);
 
                 const defaultCityRow = new Adw.ComboRow({
-                    //title: 'Varsayılan Şehir',
-                    title: 'Default City',
+                    title: _('Default City'),
                     model: new Gtk.StringList({
                         strings: cityNames
                     })
                 });
 
-                // Set current selected city
+                // Set current city
                 const currentCity = settings.get_string('default-city');
                 const cityIndex = cityNames.indexOf(currentCity);
                 if (cityIndex !== -1) {
                     defaultCityRow.selected = cityIndex;
                 }
 
-                // Update settings when city changes
+                // Handle city change
                 defaultCityRow.connect('notify::selected', (widget) => {
                     const selectedCity = cityNames[widget.selected];
                     settings.set_string('default-city', selectedCity);
@@ -106,17 +187,14 @@ export default class HerkulPreferences extends ExtensionPreferences {
                 citiesGroup.add(defaultCityRow);
             }
         } catch (error) {
-            //console.error('[PrayerTimes] Şehir listesi yüklenirken hata oluştu:', error);
             console.error('[PrayerTimes] Error loading city list:', error);
             const errorLabel = new Gtk.Label({
-                //label: 'Şehir listesi yüklenirken hata oluştu',
-                label: 'Error loading city list',
+                label: _('Error loading city list'),
                 css_classes: ['error']
             });
             citiesGroup.add(errorLabel);
         }
 
-        page.add(citiesGroup);
-        window.add(page);
+        return citiesGroup;
     }
 }

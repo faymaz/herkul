@@ -16,5 +16,10 @@
       <summary>Enable sound</summary>
       <description>Play sound with notifications</description>
     </key>
+    <key name="language" type="s">
+      <default>'en'</default>
+      <summary>Interface language</summary>
+      <description>Language for the interface (en, tr, de)</description>
+    </key>
   </schema>
 </schemalist>
