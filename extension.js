@@ -9,6 +9,25 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
+    let [targetHour, targetMinute] = targetTime.split(':').map(Number);
+    let currentHour = currentTime.get_hour();
+    let currentMinute = currentTime.get_minute();
+
+    let targetMinutes = targetHour * 60 + targetMinute;
+    let currentMinutes = currentHour * 60 + currentMinute;
+
+    if (isNextDay) {
+        targetMinutes += 24 * 60;
+    }
+
+    let diffMinutes = targetMinutes - currentMinutes;
+    return {
+        hours: Math.floor(diffMinutes / 60),
+        minutes: diffMinutes % 60
+    };
+};
+
 const prayerMap = {
     'imsak': 'Fajr',
     'gunes': 'Sunrise',
@@ -168,7 +187,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._initHttpSession();
                     return GLib.SOURCE_REMOVE;
                 });
-                this._activeTimers.add(timerId);
+                this._activeTimers.add(timerId); // Track the timeout
             }
         }
     }
@@ -332,13 +351,13 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             if (error.message.includes('not initialized') || error.message.includes('Xwayland')) {
                 if (this._retryCount < this._maxRetries) {
                     this._retryCount++;
-                    GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
+                    const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
                         this._fetchPrayerTimes();
                         return GLib.SOURCE_REMOVE;
                     });
+                    this._activeTimers.add(timerId); // Track the timeout
                 }
             }
-            //this._label.text = 'Vakitler alınamadı';
             this._label.text = 'Failed to load prayer times';
         }
     }
@@ -353,7 +372,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             const timeInfo = this._calculateTimeLeft(nextPrayer.time, nextPrayer.isNextDay);
             
             if (this._label && !this._label.is_finalized?.()) {
-                this._label.text = `${nextPrayer.name}: ${timeInfo.hours}s ${timeInfo.minutes}d`;
+                this._label.text = `${nextPrayer.name}: ${timeInfo.hours}h ${timeInfo.minutes}m`;
                 
                 if (timeInfo.totalMinutes >= 15 && timeInfo.totalMinutes <= 20) {
                     this._showNotification(nextPrayer.name, timeInfo.totalMinutes);
@@ -433,7 +452,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             hours: diff.hours,
             minutes: diff.minutes,
             totalMinutes: totalMinutes,
-            formatted: `${diff.hours}s ${diff.minutes}d`
+            formatted: `${diff.hours}h ${diff.minutes}m`
         };
     }
 
@@ -460,13 +479,14 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._isBlinking = true;
             this._icon.style_class = 'system-status-icon blink';
             
-            GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
+            const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
                 if (this._icon) {
                     this._icon.style_class = 'system-status-icon';
                     this._isBlinking = false;
                 }
                 return GLib.SOURCE_REMOVE;
             });
+            this._activeTimers.add(timerId); // Track the timeout
         }
 
         if (this._soundEnabled && !this._isPlayingSound) {
@@ -484,7 +504,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                         this._player.set_property('uri', uri);
                         this._player.set_state(Gst.State.PLAYING);
                         
-                        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
+                        const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
                             if (this._player) {
                                 this._player.set_state(Gst.State.NULL);
                                 this._player = null;
@@ -492,6 +512,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                             this._isPlayingSound = false;
                             return GLib.SOURCE_REMOVE;
                         });
+                        this._activeTimers.add(timerId); // Track the timeout
                     }
                 }
             } catch (error) {
@@ -529,14 +550,16 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         try {
             this._fetchPrayerTimes();
             this._cleanupTimers();
-            this._addTimer(() => {
+            const timerId = this._addTimer(() => {
                 this._updateDisplay();
                 return GLib.SOURCE_CONTINUE;
             }, 60);
+            this._activeTimers.add(timerId); // Track the timeout
         } catch (error) {
             console.error(`[PrayerTimes] Error starting updates: ${error}`);
         }
     }
+
     destroy() {
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
@@ -546,19 +569,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._isDestroyed = true;
         
         // Clear all timeouts
-        if (this._activeTimers) {
-            this._activeTimers.forEach(timerId => {
-                if (timerId) {
-                    GLib.source_remove(timerId);
-                }
-            });
-            this._activeTimers.clear();
-        }
-
-        if (this._timeoutSource) {
-            GLib.source_remove(this._timeoutSource);
-            this._timeoutSource = null;
-        }
+        this._cleanupTimers();
         
         // Cleanup HTTP session
         if (this._httpSession) {
@@ -573,20 +584,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
 
         // Cleanup UI elements
-        if (this._icon) {
-            this._icon.destroy();
-            this._icon = null;
-        }
-
-        if (this._label) {
-            this._label.destroy();
-            this._label = null;
-        }
-
-        if (this._fetchingIndicator) {
-            this._fetchingIndicator.destroy();
-            this._fetchingIndicator = null;
-        }
+        this._cleanupUI();
 
         this._prayerTimes = {};
         this._isPlayingSound = false;
@@ -595,25 +593,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         super.destroy();
     }
 });
-
-function calculateTimeDifference(currentTime, targetTime, isNextDay = false) {
-    let [targetHour, targetMinute] = targetTime.split(':').map(Number);
-    let currentHour = currentTime.get_hour();
-    let currentMinute = currentTime.get_minute();
-
-    let targetMinutes = targetHour * 60 + targetMinute;
-    let currentMinutes = currentHour * 60 + currentMinute;
-
-    if (isNextDay) {
-        targetMinutes += 24 * 60;
-    }
-
-    let diffMinutes = targetMinutes - currentMinutes;
-    return {
-        hours: Math.floor(diffMinutes / 60),
-        minutes: diffMinutes % 60
-    };
-}
 
 export default class PrayerTimesExtension extends Extension {
     enable() {
