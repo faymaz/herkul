@@ -642,7 +642,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 export default class PrayerTimesExtension extends Extension {
     enable() {
         console.debug('[PrayerTimes] Enabling extension');
-        initTranslations(this);
         this._indicator = new PrayerTimesIndicator(this);
         Main.panel.addToStatusArea('prayer-times', this._indicator);
     }
