@@ -7,13 +7,7 @@ import Gst from 'gi://Gst';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-// Eski
-//import Gettext from 'gi://Gettext';
-// Yeni - bu satırları kullanmalıyız
-const Gettext = imports.gettext;
-const Domain = Gettext.domain('herkul');
-const _ = Domain.gettext;
+import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
     let [targetHour, targetMinute] = targetTime.split(':').map(Number);
@@ -34,14 +28,6 @@ const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => 
     };
 };
 
-// const prayerMap = {
-//     'imsak': _("Fajr"),
-//     'gunes': _("Sunrise"),
-//     'ogle': _("Dhuhr"),
-//     'ikindi': _("Asr"),
-//     'aksam': _("Maghrib"),
-//     'yatsi': _("Isha")
-// };
 function getPrayerMap() {
     return {
         'imsak': _("Fajr"),
@@ -63,15 +49,6 @@ function loadCitiesData(extensionPath) {
     } catch (error) {
         console.error('[PrayerTimes] Error loading cities:', error);
         return null;
-    }
-}
-
-// Gettext için yardımcı fonksiyon
-function initTranslations(extension) {
-    let localeDir = extension.dir.get_child('locale');
-    
-    if (localeDir.query_exists(null)) {
-        Gettext.bindtextdomain('herkul', localeDir.get_path());
     }
 }
 
@@ -121,7 +98,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         // this._label.text = _("Loading...");
 
         this._label = new St.Label({
-            //text: 'Yükleniyor...',
             text: 'Loading...',
             y_expand: true,
             y_align: 2
@@ -294,7 +270,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             icon_size: 16
         });
         
-        //let radioItem = new PopupMenu.PopupSwitchMenuItem('Herkul Radyo', this._radioPlaying);
         let radioItem = new PopupMenu.PopupSwitchMenuItem(_('Herkul Radio'), this._radioPlaying);
 
         radioItem.insert_child_at_index(radioIcon, 1);

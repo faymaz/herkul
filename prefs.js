@@ -3,48 +3,12 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-const Gettext = imports.gettext;
-const Domain = Gettext.domain('herkul');
-const _ = Domain.gettext;
 
 export default class HerkulPreferences extends ExtensionPreferences {
-    // Initialize translations
-    _initTranslations() {
-        let localeDir = this.dir.get_child('locale');
-        
-        try {
-            // Get current language from settings
-            const settings = this.getSettings();
-            const currentLang = settings?.get_string('language') || 'en';
-            
-            // Set language environment
-            GLib.setenv('LANGUAGE', currentLang, true);
-            
-            if (localeDir.query_exists(null)) {
-                Gettext.bindtextdomain('herkul', localeDir.get_path());
-            }
-        } catch (error) {
-            console.error('[PrayerTimes] Translation initialization error:', error);
-        }
-    }
-
-    // Load specific language
-    _loadTranslations(lang) {
-        try {
-            GLib.setenv('LANGUAGE', lang, true);
-            // Rebuild the entire preferences window
-            this.fillPreferencesWindow(this._window);
-        } catch (error) {
-            console.error('[PrayerTimes] Error changing language:', error);
-        }
-    }
-
-
     fillPreferencesWindow(window) {
         this._window = window;
-        this._initTranslations();
         const settings = this.getSettings();
 
         // Create preferences page
