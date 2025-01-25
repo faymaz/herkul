@@ -1,24 +1,21 @@
 {
   "cities": [
-    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9541/prayer-time-for-istanbul" },
-    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/prayer-time-for-ankara" },
-    { "name": "Van", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9930/van-icin-namaz-vakti" },
-    { "name": "Kütahya", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9689/kutahya-icin-namaz-vakti" },
-    { "name": "Cavdarhisar", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9684/cavdarhisar-icin-namaz-vakti" },
-
-    { "name": "Frankfurt", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11010/frankfurt-icin-namaz-vakti" },
-    { "name": "Mörfelden-Walldorf", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/10214/morfelden---walldorf-icin-namaz-vakti" },
-    { "name": "Berlin", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11002/berlin-icin-namaz-vakti" },
-    { "name": "Stuttgart", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11027/stuttgart-icin-namaz-vakti" },
-    { "name": "Tuttlingen", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11083/tuttlingen-icin-namaz-vakti" },
-
-    { "name": "Costa Mesa", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8608/costa-mesa-icin-namaz-vakti" },
-    { "name": "Clifton", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8869/clifton-icin-namaz-vakti" },
-    { "name": "Irvine", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8622/irvine-icin-namaz-vakti" },
-    { "name": "Allentown", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/20036/allentown-icin-namaz-vakti" },
-    { "name": "Bethlehem", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8946/bethlehem-icin-namaz-vakti" },
-    { "name": "Paterson", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8877/paterson-icin-namaz-vakti" },
-
-    { "name": "Londra", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/14096/londra-icin-namaz-vakti" }
+    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9541/prayer-time-for-istanbul", "weatherId": "745044" },
+    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/prayer-time-for-ankara", "weatherId": "323786" },
+    { "name": "Van", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9930/van-icin-namaz-vakti", "weatherId": "298117" },
+    { "name": "Kütahya", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9689/kutahya-icin-namaz-vakti", "weatherId": "304827" },
+    { "name": "Cavdarhisar", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9684/cavdarhisar-icin-namaz-vakti", "weatherId": "749747" },
+    { "name": "Frankfurt", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11010/frankfurt-icin-namaz-vakti", "weatherId": "2925533" },
+    { "name": "Mörfelden-Walldorf", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/10214/morfelden---walldorf-icin-namaz-vakti", "weatherId": "2867993" },
+    { "name": "Berlin", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11002/berlin-icin-namaz-vakti", "weatherId": "2950159" },
+    { "name": "Stuttgart", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11027/stuttgart-icin-namaz-vakti", "weatherId": "2825297" },
+    { "name": "Tuttlingen", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11083/tuttlingen-icin-namaz-vakti", "weatherId": "2820256" },
+    { "name": "Costa Mesa", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8608/costa-mesa-icin-namaz-vakti", "weatherId": "5339840" },
+    { "name": "Clifton", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8869/clifton-icin-namaz-vakti", "weatherId": "5096699" },
+    { "name": "Irvine", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8622/irvine-icin-namaz-vakti", "weatherId": "5359777" },
+    { "name": "Allentown", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/20036/allentown-icin-namaz-vakti", "weatherId": "5178127" },
+    { "name": "Bethlehem", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8946/bethlehem-icin-namaz-vakti", "weatherId": "5179942" },
+    { "name": "Paterson", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/8877/paterson-icin-namaz-vakti", "weatherId": "5102466" },
+    { "name": "Londra", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/14096/londra-icin-namaz-vakti", "weatherId": "2643743" }
   ]
 }

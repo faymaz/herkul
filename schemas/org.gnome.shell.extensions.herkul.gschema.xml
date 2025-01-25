@@ -21,5 +21,10 @@
       <summary>Interface language</summary>
       <description>Language for the interface (en, tr, de)</description>
     </key>
+    <key name="apikey" type="s">
+      <default>''</default>
+      <summary>OpenWeatherMap API Key</summary>
+      <description>API Key for accessing OpenWeatherMap service</description>
+    </key>
   </schema>
 </schemalist>

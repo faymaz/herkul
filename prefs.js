@@ -6,32 +6,51 @@ import GLib from 'gi://GLib';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 
+
 export default class HerkulPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
         const settings = this.getSettings();
 
-        // Create preferences page
         const page = new Adw.PreferencesPage({
             title: _('Prayer Times Settings'),
             icon_name: 'preferences-system-time-symbolic',
         });
 
-        // Language settings group
-        const langGroup = this._createLanguageGroup(settings);
-        page.add(langGroup);
-
-        // Notification settings group
-        const notifyGroup = this._createNotificationGroup(settings);
-        page.add(notifyGroup);
-
-        // City settings group
+        // Mevcut gruplar
         const cityGroup = this._createCityGroup(settings);
+        const weatherGroup = this._createWeatherGroup(settings);
+        const langGroup = this._createLanguageGroup(settings);
+        const notifyGroup = this._createNotificationGroup(settings);
+                
+        
+
+        page.add(langGroup);
+        page.add(notifyGroup);
         page.add(cityGroup);
+        page.add(weatherGroup);
 
         window.add(page);
     }
 
+    _createWeatherGroup(settings) {
+        const weatherGroup = new Adw.PreferencesGroup({
+            title: _('Weather Settings'),
+            description: _('Configure OpenWeatherMap settings')
+        });
+
+        const apiKeyRow = new Adw.EntryRow({
+            title: _('API Key'),
+            text: settings.get_string('apikey')
+        });
+
+        apiKeyRow.connect('changed', entry => {
+            settings.set_string('apikey', entry.get_text());
+        });
+
+        weatherGroup.add(apiKeyRow);
+        return weatherGroup;
+    }
     _createLanguageGroup(settings) {
         const langGroup = new Adw.PreferencesGroup({
             title: _('Language'),

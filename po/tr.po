@@ -1,0 +1,123 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: herkul@faymaz.github.com\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-22 23:50+0100\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:38
+msgid "Fajr"
+msgstr "İmsak"
+
+#: extension.js:39
+msgid "Sunrise"
+msgstr "Güneş"
+
+#: extension.js:40
+msgid "Dhuhr"
+msgstr "Öğle"
+
+#: extension.js:41
+msgid "Asr"
+msgstr "İkindi"
+
+#: extension.js:42
+msgid "Maghrib"
+msgstr "Akşam"
+
+#: extension.js:43
+msgid "Isha"
+msgstr "Yatsı"
+
+#: extension.js:252
+msgid "Loading..."
+msgstr "Yükleniyor..."
+
+#: extension.js:287
+msgid "Herkul Radio"
+msgstr "Herkul Radyo"
+
+#: extension.js:296
+msgid "Select City"
+msgstr "Şehir Seç"
+
+#: extension.js:316 prefs.js:73
+msgid "Language"
+msgstr "Dil"
+
+#: extension.js:341
+msgid "Settings"
+msgstr "Ayarlar"
+
+#: prefs.js:52
+msgid "Prayer Times Settings"
+msgstr "Namaz Vakitleri Ayarları"
+
+#: prefs.js:74
+msgid "Select interface language"
+msgstr "Arayüz dilini seçin"
+
+#: prefs.js:84
+msgid "Interface Language"
+msgstr "Arayüz Dili"
+
+#: prefs.js:110
+#, fuzzy
+msgid "Notifications"
+msgstr "Bildirimleri Etkinleştir"
+
+#: prefs.js:111
+msgid "Configure notification settings"
+msgstr "Bildirim ayarlarını yapılandırın"
+
+#: prefs.js:116
+msgid "Enable Notifications"
+msgstr "Bildirimleri Etkinleştir"
+
+#: prefs.js:117
+msgid "Show notifications before prayer times"
+msgstr "Namaz vakitlerinden önce bildirim göster"
+
+#: prefs.js:134
+msgid "Enable Sound"
+msgstr "Sesi Etkinleştir"
+
+#: prefs.js:135
+msgid "Play sound with notifications"
+msgstr "Bildirimlerle birlikte ses çal"
+
+#: prefs.js:155 prefs.js:168
+msgid "Default City"
+msgstr "Varsayılan Şehir"
+
+#: prefs.js:156
+#, fuzzy
+msgid "Select default city for prayer times"
+msgstr "Vakitler alınamadı"
+
+#: prefs.js:192
+msgid "Error loading city list"
+msgstr "Şehir listesi okunamıyor"
+
+#: Weather
+msgid "Weather Settings"
+msgstr "Hava Durumu Ayarları"
+
+msgid "Configure OpenWeatherMap settings"
+msgstr "OpenWeatherMap ayarlarını yapılandır"
+
+msgid "API Key"
+msgstr "API Anahtarı"
+
+#~ msgid "Error"
+#~ msgstr "Hata"
+
+#~ msgid "Failed to load prayer times"
+#~ msgstr "Namaz vakitleri yüklenirken bir hata oluştu"
+
+# Time related text
+#~ msgid "%dh %dm remaining until %s"
+#~ msgstr "%dh %dm kaldı %s'ye"

@@ -9,6 +9,19 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+const WEATHER_ICONS = {
+    'Clear': '☀️',
+    'Clouds': '☁️',
+    'Rain': '🌧️',
+    'Snow': '🌨️',
+    'Drizzle': '🌦️',
+    'Thunderstorm': '⛈️',
+    'Mist': '🌫️',
+    'Fog': '🌫️'
+};
+
+const API_BASE = 'https://api.openweathermap.org/data/2.5/weather';
+
 const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
     let [targetHour, targetMinute] = targetTime.split(':').map(Number);
     let currentHour = currentTime.get_hour();
@@ -96,7 +109,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             });
         }
         // this._label.text = _("Loading...");
-
+        this._weatherIcon = new St.Label({
+            text: '🌤️',
+            y_expand: true,
+            y_align: 2
+        });
+        
+        this._tempLabel = new St.Label({
+            text: '',
+            y_expand: true,
+            y_align: 2
+        });
+    
         this._label = new St.Label({
             text: 'Loading...',
             y_expand: true,
@@ -111,8 +135,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             visible: false
         });
     
+        this._fetchingIndicator = new St.Label({
+            text: '⟳',
+            y_expand: true,
+            y_align: 2,
+            style_class: 'loading-indicator',
+            visible: false
+        });
+    
         let hbox = new St.BoxLayout({style_class: 'panel-status-menu-box'});
         hbox.add_child(this._icon);
+        hbox.add_child(this._weatherIcon);
+        hbox.add_child(this._tempLabel);                
         hbox.add_child(this._label);
         hbox.add_child(this._fetchingIndicator);
         this.add_child(hbox);
@@ -148,6 +182,33 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             GLib.source_remove(timerId);
         }
         this._activeTimers.clear();
+    }
+
+    _startUpdating() {
+        if (this._isDestroyed) return;
+        
+        try {
+            this._fetchPrayerTimes();
+            this._fetchWeatherData();
+            this._cleanupTimers();
+            
+            // Namaz vakitleri için timer (1 dakika)
+            const prayerTimerId = this._addTimer(() => {
+                this._updateDisplay();
+                return GLib.SOURCE_CONTINUE;
+            }, 60);
+            
+            // Hava durumu için timer (30 dakika)
+            const weatherTimerId = this._addTimer(() => {
+                this._fetchWeatherData();
+                return GLib.SOURCE_CONTINUE;
+            }, 1800);
+            
+            this._activeTimers.add(prayerTimerId);
+            this._activeTimers.add(weatherTimerId);
+        } catch (error) {
+            console.error(`[Herkul] Error starting updates: ${error}`);
+        }
     }
 
     _initHttpSession() {
@@ -228,6 +289,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 break;
             case 'sound-enabled':
                 this._soundEnabled = this._settings.get_boolean('sound-enabled');
+                break;
+            case 'apikey':
+                this._fetchWeatherData();
                 break;
         }
     }
@@ -332,6 +396,43 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(settingsButton);
     }
+    async _fetchWeatherData() {
+        const apiKey = this._settings.get_string('apikey');
+        if (!apiKey) return;
+    
+        const cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
+        if (!cityData?.weatherId) return;
+    
+        try {
+            const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric`;
+            let message = Soup.Message.new('GET', url);
+            
+            let bytes = await this._httpSession.send_and_read_async(
+                message,
+                GLib.PRIORITY_DEFAULT,
+                null
+            );
+    
+            if (message.status_code !== 200) return;
+    
+            const data = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+            if (data.weather?.[0]) {
+                const weather = data.weather[0];
+                const temp = Math.round(data.main.temp);
+                const icon = WEATHER_ICONS[weather.main] || '🌤️';
+                
+                if (this._weatherIcon && !this._weatherIcon.is_finalized?.()) {
+                    this._weatherIcon.text = icon;
+                }
+                if (this._tempLabel && !this._tempLabel.is_finalized?.()) {
+                    this._tempLabel.text = `${temp}°C`;
+                }
+            }
+        } catch (error) {
+            console.error(`[Herkul] Weather error: ${error}`);
+        }
+    }
+
 
     async _fetchPrayerTimes() {
         if (!this._citiesData) {
