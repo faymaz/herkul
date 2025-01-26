@@ -5,8 +5,6 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-
-
 export default class HerkulPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
@@ -24,12 +22,10 @@ export default class HerkulPreferences extends ExtensionPreferences {
         const notifyGroup = this._createNotificationGroup(settings);
                 
         
-
-        page.add(langGroup);
-        page.add(notifyGroup);
         page.add(cityGroup);
         page.add(weatherGroup);
-
+        page.add(notifyGroup);
+        page.add(langGroup);
         window.add(page);
     }
 
