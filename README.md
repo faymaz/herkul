@@ -19,7 +19,7 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 
 ## Özellikler
 
-- 🕌 Diyanet'in web sitesinden canlı namaz vakitleri
+- 🕌 Diyanet'in web sitesinden güncel namaz vakitleri
 - 🌍 Birçok şehir için destek (Türkiye, Almanya, ABD, İngiltere vb.)
 - 🌤️ OpenWeatherMap üzerinden güncel hava durumu bilgileri
 - 🔔 Namaz vakti yaklaştığında bildirim sistemi
