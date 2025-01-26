@@ -103,7 +103,8 @@ Yeni şehirler eklemek istiyorsanız, `cities.json` dosyasını düzenleyebilirs
     //
     // Daha fazla şehir ekleyebilirsiniz...
     //
-    { "name": "Londra", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/14096/londra-icin-namaz-vakti", "weatherId": "2643743" }
+    { "name": "Medine", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/16308/medine-icin-namaz-vakti", "weatherId": "109223" },
+    { "name": "Mekke", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/16309/mekke-icin-namaz-vakti", "weatherId": "104515" }
   ]
 }
 ```
