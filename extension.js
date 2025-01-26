@@ -149,11 +149,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
     
         let hbox = new St.BoxLayout({style_class: 'panel-status-menu-box'});
+        // hbox.add_child(this._icon);
+        // hbox.add_child(this._cityLabel);
+        // hbox.add_child(this._label);
+        // hbox.add_child(this._weatherIcon);
+        // hbox.add_child(this._tempLabel);
+        // hbox.add_child(this._fetchingIndicator);
         hbox.add_child(this._icon);
         hbox.add_child(this._cityLabel);
-        hbox.add_child(this._label);
         hbox.add_child(this._weatherIcon);
         hbox.add_child(this._tempLabel);
+        hbox.add_child(this._label);
         hbox.add_child(this._fetchingIndicator);
         this.add_child(hbox);
     
