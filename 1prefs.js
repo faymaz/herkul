@@ -1,15 +1,15 @@
-import {ExtensionPreferences, gettext as _, ngettext} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import GObject from 'gi://GObject';
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class HerkulPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
         const settings = this.getSettings();
-        this._bindTextDomain();
+
         const page = new Adw.PreferencesPage({
             title: _('Prayer Times Settings'),
             icon_name: 'preferences-system-time-symbolic',
@@ -56,8 +56,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
         const languages = [
             { id: 'en', name: 'English' },
             { id: 'tr', name: 'Türkçe' },
-            { id: 'de', name: 'Deutsch' },
-            { id: 'ar', name: 'العربية' }
+            { id: 'de', name: 'Deutsch' }
         ];
 
         const langRow = new Adw.ComboRow({
@@ -129,37 +128,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
         return notifyGroup;
     }
-    
-    // _loadTranslations(locale) {
-    //     GLib.setenv('LANGUAGE', locale, true);
-    //     let localeDir = GLib.build_filenamev([this.path, 'locale']);
-    //     try {
-    //         Gettext.bindtextdomain('herkul', localeDir);
-    //         Gettext.textdomain('herkul');
-    //         this._window.set_title(_('Prayer Times Settings'));
-    //     } catch (e) {
-    //         console.error('[Herkul] Translation error:', e);
-    //     }
-    // }
 
-    // _bindTextDomain() {
-    //     let localeDir = GLib.build_filenamev([this.path, 'locale']);
-    //     let currentLang = this.getSettings().get_string('language');
-        
-    //     GLib.setenv('LANGUAGE', currentLang, true);
-    //     Gettext.bindtextdomain('herkul', localeDir);
-    //     Gettext.textdomain('herkul');
-    // }
-    _bindTextDomain() {
-        let localeDir = GLib.build_filenamev([this.path, 'locale']);
-        let currentLang = this.getSettings().get_string('language');
-        GLib.setenv('LANGUAGE', currentLang, true);
-    }
-    
-    _loadTranslations(locale) {
-        GLib.setenv('LANGUAGE', locale, true);
-        this._window.set_title(_('Prayer Times Settings'));
-    }
     _createCityGroup(settings) {
         const citiesGroup = new Adw.PreferencesGroup({
             title: _('Default City'),
