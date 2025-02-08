@@ -17,9 +17,9 @@
       <description>Play sound with notifications</description>
     </key>
     <key name="language" type="s">
-      <default>'en'</default>
+      <default>'tr'</default>
       <summary>Interface language</summary>
-      <description>Language for the interface (en, tr, de)</description>
+      <description>Language for the interface (ar, de, en, tr)</description>
     </key>
     <key name="apikey" type="s">
       <default>''</default>

@@ -21,3 +21,18 @@
         -rotation-angle: 360deg;
     }
 }
+.popup-menu-item.rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.popup-sub-menu.rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Arapça dil seçildiğinde RTL desteği için */
+.prayer-times-rtl {
+    direction: rtl;
+    text-align: right;
+}

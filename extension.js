@@ -372,7 +372,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         const languages = [
             { id: 'en', name: 'English' },
             { id: 'tr', name: 'Türkçe' },
-            { id: 'de', name: 'Deutsch' }
+            { id: 'de', name: 'Deutsch' },
+            { id: 'ar', name: 'العربية' }
         ];
 
         languages.forEach(lang => {
