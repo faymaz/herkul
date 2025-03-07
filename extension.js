@@ -199,8 +199,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
             
             // Sinyal takip mekanizması varsa temizle
-            if (this._radioWatcherId) {
-                GLib.source_remove(this._radioWatcherId);
+            if (this._radioWatcherId && GLib.source_remove(this._radioWatcherId)) {
                 this._radioWatcherId = null;
             }
             
@@ -212,15 +211,12 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 throw new Error('GStreamer playbin oluşturulamadı');
             }
             
-            // Akış URL'si (ana ve yedek URL'ler)
-            const primaryUrl = 'https://s1.wohooo.net/proxy/herkulfo/stream';
-            const backupUrl = 'https://s1.wohooo.net:8100/stream'; // Yedek URL (eğer varsa)
+            // Ana URL'yi ayarla
+            this._radioPlayer.set_property('uri', 'https://s1.wohooo.net/proxy/herkulfo/stream');
             
-            // Ana URL ile başla
-            this._radioPlayer.set_property('uri', primaryUrl);
-
-            // this._radioPlayer.set_property('buffer-size', 2097152); // 2MB buffer
-            // this._radioPlayer.set_property('buffer-duration', 5000000000); // 5 saniye buffer
+            // Buffer ayarlarını iyileştir
+            this._radioPlayer.set_property('buffer-size', 2097152); // 2MB buffer
+            this._radioPlayer.set_property('buffer-duration', 5000000000); // 5 saniye buffer
             
             // Radyo durumunu izleme
             this._setupRadioStateMonitoring();
@@ -231,12 +227,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             
             // Periyodik olarak radyo durumunu kontrol et (her 30 saniyede bir)
             this._radioWatcherId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
+                if (this._isDestroyed || !this._radioPlaying) {
+                    return GLib.SOURCE_REMOVE;
+                }
                 this._checkRadioStatus();
-                return GLib.SOURCE_CONTINUE; // Devam et
+                return GLib.SOURCE_CONTINUE;
             });
             
-            // Bu timeout ID'sini aktif zamanlayıcılar listesine ekle
-            this._activeTimers.add(this._radioWatcherId);
+            // Bu ID'yi takip et
+            if (this._radioWatcherId) {
+                this._activeTimers.add(this._radioWatcherId);
+            }
             
         } catch (error) {
             console.error(`[Herkul] Radyo başlatma hatası: ${error}`);
@@ -245,18 +246,22 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     }
 
     _checkRadioStatus() {
-        if (!this._radioPlayer || !this._radioPlaying) return false;
+        if (!this._radioPlayer || !this._radioPlaying || this._isDestroyed) return false;
         
-        // Radyonun durumunu kontrol et
-        let [ret, state, pending] = this._radioPlayer.get_state(Gst.CLOCK_TIME_NONE);
-        
-        // Eğer radyo PLAYING durumunda değilse ve bağlantı sorunu varsa
-        if (state !== Gst.State.PLAYING && state !== Gst.State.PAUSED) {
-            console.log(`[Herkul] Radyo durumu anormal: ${state}, yeniden başlatılıyor`);
-            this._restartRadio();
+        try {
+            // Radyonun durumunu kontrol et
+            const [ret, state, pending] = this._radioPlayer.get_state(0);
+            
+            // Eğer radyo PLAYING durumunda değilse ve bağlantı sorunu varsa
+            if (state !== Gst.State.PLAYING && state !== Gst.State.PAUSED) {
+                console.log(`[Herkul] Radyo durumu anormal: ${state}, yeniden başlatılıyor`);
+                this._scheduleRadioRestart();
+            }
+        } catch (error) {
+            console.log(`[Herkul] Durum kontrolü hatası: ${error.message}`);
         }
         
-        return true; // Zamanlayıcıyı sürdür
+        return true;
     }
 
 
@@ -284,52 +289,141 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._activeTimers.add(restartTimerId);
     }
 
+    _scheduleRadioRestart() {
+        if (!this._radioPlaying || this._isDestroyed) return;
+        
+        // Eğer zaten yeniden başlatma planlandıysa, yeni plan yapma
+        if (this._radioRestartTimerId) return;
+        
+        console.log('[Herkul] Radyo yeniden başlatma planlanıyor...');
+        
+        try {
+            // 2 saniye sonra yeniden başlat
+            this._radioRestartTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2, () => {
+                if (this._isDestroyed) return GLib.SOURCE_REMOVE;
+                
+                try {
+                    const wasPlaying = this._radioPlaying;
+                    this._stopRadio();
+                    
+                    if (wasPlaying) {
+                        // Alternatif stream URL'lerini sırayla dene
+                        this._radioRetryCount = (this._radioRetryCount || 0) + 1;
+                        this._startRadio();
+                    }
+                } catch (e) {
+                    console.error(`[Herkul] Yeniden başlatma hatası: ${e.message}`);
+                }
+                
+                this._radioRestartTimerId = null;
+                return GLib.SOURCE_REMOVE;
+            });
+            
+            // Zamanlayıcıyı takip et
+            this._activeTimers.add(this._radioRestartTimerId);
+            
+        } catch (error) {
+            console.error(`[Herkul] Yeniden başlatma planlama hatası: ${error.message}`);
+        }
+    }
+
+
 
     _setupRadioStateMonitoring() {
         if (!this._radioPlayer) return;
         
-        // GStreamer bus sinyallerini dinle
-        const bus = this._radioPlayer.get_bus();
-        
-        // Bus watch ID'sini saklayalım ki daha sonra temizleyebilelim
-        if (this._radioBusWatchId) {
-            bus.remove_watch(this._radioBusWatchId);
-        }
-        
-        this._radioBusWatchId = bus.add_watch(GLib.PRIORITY_DEFAULT, (bus, message) => {
-            if (message.type === Gst.MessageType.ERROR) {
-                const [error, debug] = message.parse_error();
-                console.error(`[Herkul] GStreamer hatası: ${error.message} (${debug})`);
-                
-                // Radyo akışını yeniden başlatmayı dene
-                this._restartRadio();
-            } 
-            else if (message.type === Gst.MessageType.EOS) {
-                console.log('[Herkul] Radyo akışı sona erdi, yeniden başlatılıyor');
-                this._restartRadio();
-            }
-            else if (message.type === Gst.MessageType.STATE_CHANGED) {
-                if (message.src === this._radioPlayer) {
-                    const [oldState, newState, pendingState] = message.parse_state_changed();
-                    if (newState === Gst.State.PLAYING) {
-                        console.log('[Herkul] Radyo çalıyor');
-                    } else if (newState === Gst.State.PAUSED) {
-                        console.log('[Herkul] Radyo duraklatıldı');
-                    }
+        try {
+            // GStreamer bus sinyallerini dinle
+            const bus = this._radioPlayer.get_bus();
+            
+            // Önceki sinyal izlemelerini temizle
+            if (this._radioBusWatch) {
+                bus.remove_signal_watch();
+                if (this._busMessageId) {
+                    bus.disconnect(this._busMessageId);
+                    this._busMessageId = null;
                 }
             }
             
-            return true; // Sinyal izlemeye devam et
-        });
+            // Yeni sinyal izleme ekle
+            bus.add_signal_watch();
+            this._radioBusWatch = true;
+            
+            // Mesaj sinyalini bağla
+            this._busMessageId = bus.connect('message', (bus, message) => {
+                if (!this._radioPlayer || this._isDestroyed) return;
+                
+                try {
+                    if (message.type === Gst.MessageType.ERROR) {
+                        const [error, debug] = message.parse_error();
+                        console.error(`[Herkul] GStreamer hatası: ${error.message} (${debug})`);
+                        this._scheduleRadioRestart();
+                    } 
+                    else if (message.type === Gst.MessageType.EOS) {
+                        console.log('[Herkul] Radyo akışı sona erdi');
+                        this._scheduleRadioRestart();
+                    }
+                    else if (message.type === Gst.MessageType.STATE_CHANGED) {
+                        if (message.src === this._radioPlayer) {
+                            const [oldState, newState, pendingState] = message.parse_state_changed();
+                            
+                            if (newState === Gst.State.PLAYING) {
+                                console.log('[Herkul] Radyo çalıyor');
+                            } else if (newState === Gst.State.PAUSED) {
+                                console.log('[Herkul] Radyo duraklatıldı');
+                            }
+                        }
+                    }
+                    else if (message.type === Gst.MessageType.BUFFERING) {
+                        const percent = message.parse_buffering();
+                        console.log(`[Herkul] Radyo tamponu: %${percent}`);
+                        
+                        // Tamponlama sırasında duraklatma/oynatma kontrolü
+                        if (percent < 100) {
+                            if (this._radioPlayer.current_state === Gst.State.PLAYING) {
+                                this._radioPlayer.set_state(Gst.State.PAUSED);
+                            }
+                        } else {
+                            this._radioPlayer.set_state(Gst.State.PLAYING);
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[Herkul] Bus mesajı işleme hatası: ${e.message}`);
+                }
+            });
+            
+        } catch (error) {
+            console.error(`[Herkul] Bus izleme hatası: ${error.message}`);
+        }
     }
 
     _stopRadio() {
         try {
-            // Durumu izleme zamanlayıcısını temizle
+            // Durumu izleme zamanlayıcısını kaldır (varsa ve hala geçerliyse)
             if (this._radioWatcherId) {
-                GLib.source_remove(this._radioWatcherId);
+                try {
+                    GLib.source_remove(this._radioWatcherId);
+                    this._activeTimers.delete(this._radioWatcherId);
+                } catch (e) {
+                    // Zamanlayıcı zaten kaldırılmış olabilir, sessizce devam et
+                    console.log(`[Herkul] Zamanlayıcı kaldırma bilgisi: ${e.message}`);
+                }
                 this._radioWatcherId = null;
-                this._activeTimers.delete(this._radioWatcherId);
+            }
+            
+            // Bus watch kaldır
+            if (this._radioBusWatch && this._radioPlayer) {
+                try {
+                    const bus = this._radioPlayer.get_bus();
+                    bus.remove_signal_watch();
+                    if (this._busMessageId) {
+                        bus.disconnect(this._busMessageId);
+                        this._busMessageId = null;
+                    }
+                } catch (e) {
+                    console.log(`[Herkul] Bus kaldırma bilgisi: ${e.message}`);
+                }
+                this._radioBusWatch = false;
             }
             
             // Player'ı durdur
@@ -912,7 +1006,52 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
         
         this._isDestroyed = true;
+
+        if (this._radioWatcherId) {
+            try {
+                GLib.source_remove(this._radioWatcherId);
+            } catch (e) {
+                // Sessizce devam et
+            }
+            this._radioWatcherId = null;
+        }
         
+        if (this._radioRestartTimerId) {
+            try {
+                GLib.source_remove(this._radioRestartTimerId);
+            } catch (e) {
+                // Sessizce devam et  
+            }
+            this._radioRestartTimerId = null;
+        }
+        
+        if (this._radioBusWatch && this._radioPlayer) {
+            try {
+                const bus = this._radioPlayer.get_bus();
+                bus.remove_signal_watch();
+                
+                if (this._busMessageId) {
+                    bus.disconnect(this._busMessageId);
+                    this._busMessageId = null;
+                }
+            } catch (e) {
+                // Sessizce devam et
+            }
+            this._radioBusWatch = false;
+        }
+        
+        // Mevcut radyo temizliğiniz
+        if (this._radioPlayer) {
+            this._radioPlayer.set_state(Gst.State.NULL);
+            this._radioPlayer = null;
+        }
+        
+        // Mevcut destroy kodunuza devam
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+
         // Clear all timeouts
         this._cleanupTimers();
         
@@ -922,23 +1061,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._httpSession = null;
         }
         
-        // Cleanup radio player
-        // if (this._radioPlayer) {
-        //     this._radioPlayer.set_state(Gst.State.NULL);
-        //     this._radioPlayer = null;
-        // }
-
-        // Radio ile ilgili ek kaynakları temizle
-        if (this._radioWatcherId) {
-            GLib.source_remove(this._radioWatcherId);
-            this._radioWatcherId = null;
-        }
-        
-        if (this._radioBusWatchId && this._radioPlayer) {
-            const bus = this._radioPlayer.get_bus();
-            bus.remove_watch(this._radioBusWatchId);
-            this._radioBusWatchId = null;
-        }
         
         // Mevcut destroy işlemine devam et
         if (this._settingsChangedId) {
