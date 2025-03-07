@@ -1046,12 +1046,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._radioPlayer = null;
         }
         
-        // Mevcut destroy kodunuza devam
-        if (this._settingsChangedId) {
-            this._settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = null;
-        }
-
         // Clear all timeouts
         this._cleanupTimers();
         
