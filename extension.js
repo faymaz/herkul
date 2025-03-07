@@ -378,13 +378,20 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                         const percent = message.parse_buffering();
                         console.log(`[Herkul] Radyo tamponu: %${percent}`);
                         
-                        // Tamponlama sırasında duraklatma/oynatma kontrolü
-                        if (percent < 100) {
-                            if (this._radioPlayer.current_state === Gst.State.PLAYING) {
-                                this._radioPlayer.set_state(Gst.State.PAUSED);
+                        // Doğrudan current_state erişimi yerine get_state() kullanın
+                        try {
+                            // Tamponlama sırasında duraklatma/oynatma kontrolü
+                            if (percent < 100) {
+                                // Durum kontrolü daha güvenli şekilde yapılıyor
+                                const [ret, state, pending] = this._radioPlayer.get_state(0);
+                                if (state === Gst.State.PLAYING) {
+                                    this._radioPlayer.set_state(Gst.State.PAUSED);
+                                }
+                            } else {
+                                this._radioPlayer.set_state(Gst.State.PLAYING);
                             }
-                        } else {
-                            this._radioPlayer.set_state(Gst.State.PLAYING);
+                        } catch (e) {
+                            console.log(`[Herkul] Tampon durum kontrolü hatası: ${e.message}`);
                         }
                     }
                 } catch (e) {
@@ -394,48 +401,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             
         } catch (error) {
             console.error(`[Herkul] Bus izleme hatası: ${error.message}`);
-        }
-    }
-
-    _stopRadio() {
-        try {
-            // Durumu izleme zamanlayıcısını kaldır (varsa ve hala geçerliyse)
-            if (this._radioWatcherId) {
-                try {
-                    GLib.source_remove(this._radioWatcherId);
-                    this._activeTimers.delete(this._radioWatcherId);
-                } catch (e) {
-                    // Zamanlayıcı zaten kaldırılmış olabilir, sessizce devam et
-                    console.log(`[Herkul] Zamanlayıcı kaldırma bilgisi: ${e.message}`);
-                }
-                this._radioWatcherId = null;
-            }
-            
-            // Bus watch kaldır
-            if (this._radioBusWatch && this._radioPlayer) {
-                try {
-                    const bus = this._radioPlayer.get_bus();
-                    bus.remove_signal_watch();
-                    if (this._busMessageId) {
-                        bus.disconnect(this._busMessageId);
-                        this._busMessageId = null;
-                    }
-                } catch (e) {
-                    console.log(`[Herkul] Bus kaldırma bilgisi: ${e.message}`);
-                }
-                this._radioBusWatch = false;
-            }
-            
-            // Player'ı durdur
-            if (this._radioPlayer) {
-                this._radioPlayer.set_state(Gst.State.NULL);
-                this._radioPlayer = null;
-            }
-            
-            this._radioPlaying = false;
-            
-        } catch (error) {
-            console.error(`[Herkul] Radyo durdurma hatası: ${error}`);
         }
     }
 
