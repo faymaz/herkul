@@ -502,6 +502,49 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
     }
 
+
+    _stopRadio() {
+        try {
+            // Durumu izleme zamanlayıcısını kaldır (varsa ve hala geçerliyse)
+            if (this._radioWatcherId) {
+                try {
+                    GLib.source_remove(this._radioWatcherId);
+                    this._activeTimers.delete(this._radioWatcherId);
+                } catch (e) {
+                    // Zamanlayıcı zaten kaldırılmış olabilir, sessizce devam et
+                    console.log(`[Herkul] Zamanlayıcı kaldırma bilgisi: ${e.message}`);
+                }
+                this._radioWatcherId = null;
+            }
+            
+            // Bus watch kaldır
+            if (this._radioBusWatch && this._radioPlayer) {
+                try {
+                    const bus = this._radioPlayer.get_bus();
+                    bus.remove_signal_watch();
+                    if (this._busMessageId) {
+                        bus.disconnect(this._busMessageId);
+                        this._busMessageId = null;
+                    }
+                } catch (e) {
+                    console.log(`[Herkul] Bus kaldırma bilgisi: ${e.message}`);
+                }
+                this._radioBusWatch = false;
+            }
+            
+            // Player'ı durdur
+            if (this._radioPlayer) {
+                this._radioPlayer.set_state(Gst.State.NULL);
+                this._radioPlayer = null;
+            }
+            
+            this._radioPlaying = false;
+            
+        } catch (error) {
+            console.error(`[Herkul] Radyo durdurma hatası: ${error}`);
+        }
+    }
+
     _onSettingsChanged(settings, key) {
         switch(key) {
             case 'language':
