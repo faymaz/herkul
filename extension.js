@@ -510,6 +510,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 try {
                     GLib.source_remove(this._radioWatcherId);
                     this._activeTimers.delete(this._radioWatcherId);
+                    console.log('[Herkul] Radyo durduruldu');
                 } catch (e) {
                     // Zamanlayıcı zaten kaldırılmış olabilir, sessizce devam et
                     console.log(`[Herkul] Zamanlayıcı kaldırma bilgisi: ${e.message}`);
