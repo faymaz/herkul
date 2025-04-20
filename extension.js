@@ -172,8 +172,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
             
            
-            this._radioPlayer.set_property('uri', 'https://s1.wohooo.net/proxy/herkulfo/stream');
-            
+            //this._radioPlayer.set_property('uri', 'https://s1.wohooo.net/proxy/herkulfo/stream');
+            this._radioPlayer.set_property('uri', 'https://play.radioking.io/herkulradyo');
            
             this._radioPlayer.set_property('buffer-size', 2097152);
             this._radioPlayer.set_property('buffer-duration', 5000000000);
