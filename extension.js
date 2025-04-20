@@ -8,6 +8,18 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+const WEATHER_ICONS = {
+    'Clear': '☀️',
+    'Clouds': '☁️',
+    'Rain': '🌧️',
+    'Snow': '🌨️',
+    'Drizzle': '🌦️',
+    'Thunderstorm': '⛈️',
+    'Mist': '🌫️',
+    'Fog': '🌫️'
+};
+
+const API_BASE = 'https://api.openweathermap.org/data/2.5/weather';
 
 const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
     let [targetHour, targetMinute] = targetTime.split(':').map(Number);
@@ -96,7 +108,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             });
         }
         // this._label.text = _("Loading...");
-
+        this._weatherIcon = new St.Label({
+            text: '🌤️',
+            y_expand: true,
+            y_align: 2
+        });
+        
+        this._tempLabel = new St.Label({
+            text: '',
+            y_expand: true,
+            y_align: 2
+        });
+    
         this._label = new St.Label({
             text: 'Loading...',
             y_expand: true,
@@ -110,9 +133,32 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             style_class: 'loading-indicator',
             visible: false
         });
+        
+        this._cityLabel = new St.Label({
+            text: this._selectedCity,
+            y_expand: true,
+            y_align: 2
+        });
+        
+        this._fetchingIndicator = new St.Label({
+            text: '⟳',
+            y_expand: true,
+            y_align: 2,
+            style_class: 'loading-indicator',
+            visible: false
+        });
     
         let hbox = new St.BoxLayout({style_class: 'panel-status-menu-box'});
+        // hbox.add_child(this._icon);
+        // hbox.add_child(this._cityLabel);
+        // hbox.add_child(this._label);
+        // hbox.add_child(this._weatherIcon);
+        // hbox.add_child(this._tempLabel);
+        // hbox.add_child(this._fetchingIndicator);
         hbox.add_child(this._icon);
+        hbox.add_child(this._cityLabel);
+        hbox.add_child(this._weatherIcon);
+        hbox.add_child(this._tempLabel);
         hbox.add_child(this._label);
         hbox.add_child(this._fetchingIndicator);
         this.add_child(hbox);
@@ -148,6 +194,33 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             GLib.source_remove(timerId);
         }
         this._activeTimers.clear();
+    }
+
+    _startUpdating() {
+        if (this._isDestroyed) return;
+        
+        try {
+            this._fetchPrayerTimes();
+            this._fetchWeatherData();
+            this._cleanupTimers();
+            
+            // Namaz vakitleri için timer (1 dakika)
+            const prayerTimerId = this._addTimer(() => {
+                this._updateDisplay();
+                return GLib.SOURCE_CONTINUE;
+            }, 60);
+            
+            // Hava durumu için timer (30 dakika)
+            const weatherTimerId = this._addTimer(() => {
+                this._fetchWeatherData();
+                return GLib.SOURCE_CONTINUE;
+            }, 1800);
+            
+            this._activeTimers.add(prayerTimerId);
+            this._activeTimers.add(weatherTimerId);
+        } catch (error) {
+            console.error(`[Herkul] Error starting updates: ${error}`);
+        }
     }
 
     _initHttpSession() {
@@ -197,30 +270,21 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     }
 
     _loadTranslations(lang) {
-        let locale = lang || 'en';
-        let localeDir = this._extension.dir.get_child('locale');
-        
         try {
+            let locale = lang || 'en';
             GLib.setenv('LANGUAGE', locale, true);
-            Gettext.bindtextdomain('herkul', localeDir.get_path());
-            Gettext.textdomain('herkul');
-            Gettext.get_language_names();
         } catch (e) {
-            console.error('[PrayerTimes] Error loading translations:', e);
+            console.error('[Herkul] Error loading translations:', e);
         }
     }
 
     _onSettingsChanged(settings, key) {
         switch(key) {
             case 'language':
-                const newLang = this._settings.get_string('language');
-                this._loadTranslations(newLang);
-                this._updateDisplay();
-                this._rebuildMenu();
-                break;
             case 'default-city':
                 this._selectedCity = this._settings.get_string('default-city');
                 this._fetchPrayerTimes();
+                this._fetchWeatherData(); // Hava durumunu güncelle
                 this._rebuildMenu();
                 break;
             case 'notify-enabled':
@@ -228,6 +292,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 break;
             case 'sound-enabled':
                 this._soundEnabled = this._settings.get_boolean('sound-enabled');
+                break;
+            case 'apikey':
+                this._fetchWeatherData();
                 break;
         }
     }
@@ -258,6 +325,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 let prayerName = prayerNames[name];
                 let menuItem = new PopupMenu.PopupMenuItem(`${prayerName}: ${time}`);
                 this.menu.addMenuItem(menuItem);
+                this._updateWeatherMenu();
             });
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }
@@ -304,7 +372,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         const languages = [
             { id: 'en', name: 'English' },
             { id: 'tr', name: 'Türkçe' },
-            { id: 'de', name: 'Deutsch' }
+            { id: 'de', name: 'Deutsch' },
+            { id: 'ar', name: 'العربية' }
         ];
 
         languages.forEach(lang => {
@@ -332,6 +401,70 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(settingsButton);
     }
+
+    async _fetchWeatherData() {
+        const apiKey = this._settings.get_string('apikey');
+        if (!apiKey) return;
+    
+        const cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
+        if (!cityData?.weatherId) return;
+    
+        try {
+            const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric`;
+            let message = Soup.Message.new('GET', url);
+            let bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+            
+            if (message.status_code === 200) {
+                const data = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+                this._updateWeatherDisplay(data);
+            }
+        } catch (error) {
+            console.error('[Herkul] Weather error:', error);
+        }
+    }
+
+    _updateWeatherDisplay(data) {
+        if (!data?.weather?.[0] || this._isDestroyed) return;
+        
+        try {
+            const weather = data.weather[0];
+            const temp = Math.round(data.main.temp);
+            const icon = WEATHER_ICONS[weather.main] || '🌤️';
+            
+            if (this._weatherIcon?.get_parent()) {
+                this._weatherIcon.text = icon;
+            }
+            if (this._tempLabel?.get_parent()) {
+                this._tempLabel.text = `${temp}°C`;
+            }
+        } catch (error) {
+            console.error('[Herkul] Display update error:', error);
+        }
+    }
+
+    _updateWeatherMenu() {
+        if (!this._weatherData?.weather?.[0]) return;
+    
+        const weather = this._weatherData.weather[0];
+        const temp = Math.round(this._weatherData.main.temp);
+        const feelsLike = Math.round(this._weatherData.main.feels_like);
+        const humidity = this._weatherData.main.humidity;
+        const windSpeed = this._weatherData.wind.speed;
+    
+        // Hava durumu menüsü
+        const weatherItem = new PopupMenu.PopupMenuItem(`${weather.description}`);
+        const tempItem = new PopupMenu.PopupMenuItem(`Temperature: ${temp}°C (Feels like: ${feelsLike}°C)`);
+        const humidityItem = new PopupMenu.PopupMenuItem(`Humidity: ${humidity}%`);
+        const windItem = new PopupMenu.PopupMenuItem(`Wind: ${windSpeed} m/s`);
+    
+        // Namaz vakitlerinden sonra ekle
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this.menu.addMenuItem(weatherItem);
+        this.menu.addMenuItem(tempItem);
+        this.menu.addMenuItem(humidityItem);
+        this.menu.addMenuItem(windItem);
+    }
+    
 
     async _fetchPrayerTimes() {
         if (!this._citiesData) {
@@ -409,6 +542,10 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 
     _updateDisplay() {
         if (this._isDestroyed) return;
+
+        if (this._cityLabel && !this._cityLabel.is_finalized?.()) {
+            this._cityLabel.text = this._selectedCity;
+        }
         
         const nextPrayer = this._findNextPrayer();
         if (!nextPrayer) return;
@@ -450,14 +587,12 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     }
 
     _cleanupUI() {
-        ['_label', '_icon', '_fetchingIndicator'].forEach(widgetName => {
-            if (this[widgetName]) {
+        ['_label', '_icon', '_fetchingIndicator', '_weatherIcon', '_tempLabel', '_cityLabel'].forEach(widgetName => {
+            if (this[widgetName] && !this[widgetName].is_finalized?.()) {
                 try {
-                    if (!this[widgetName].is_finalized?.()) {
-                        this[widgetName].destroy();
-                    }
+                    this[widgetName].destroy();
                 } catch (error) {
-                    console.error(`[PrayerTimes] Error destroying ${widgetName}: ${error}`);
+                    console.error(`[Herkul] Error destroying ${widgetName}:`, error);
                 }
                 this[widgetName] = null;
             }

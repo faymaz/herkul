@@ -1,37 +1,52 @@
+import {ExtensionPreferences, gettext as _, ngettext} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import GObject from 'gi://GObject';
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-
 
 export default class HerkulPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
         const settings = this.getSettings();
-
-        // Create preferences page
+        this._bindTextDomain();
         const page = new Adw.PreferencesPage({
             title: _('Prayer Times Settings'),
             icon_name: 'preferences-system-time-symbolic',
         });
 
-        // Language settings group
-        const langGroup = this._createLanguageGroup(settings);
-        page.add(langGroup);
-
-        // Notification settings group
-        const notifyGroup = this._createNotificationGroup(settings);
-        page.add(notifyGroup);
-
-        // City settings group
+        // Mevcut gruplar
         const cityGroup = this._createCityGroup(settings);
+        const weatherGroup = this._createWeatherGroup(settings);
+        const langGroup = this._createLanguageGroup(settings);
+        const notifyGroup = this._createNotificationGroup(settings);
+                
+        
         page.add(cityGroup);
-
+        page.add(weatherGroup);
+        page.add(notifyGroup);
+        page.add(langGroup);
         window.add(page);
     }
 
+    _createWeatherGroup(settings) {
+        const weatherGroup = new Adw.PreferencesGroup({
+            title: _('Weather Settings'),
+            description: _('Configure OpenWeatherMap settings')
+        });
+
+        const apiKeyRow = new Adw.EntryRow({
+            title: _('API Key'),
+            text: settings.get_string('apikey')
+        });
+
+        apiKeyRow.connect('changed', entry => {
+            settings.set_string('apikey', entry.get_text());
+        });
+
+        weatherGroup.add(apiKeyRow);
+        return weatherGroup;
+    }
     _createLanguageGroup(settings) {
         const langGroup = new Adw.PreferencesGroup({
             title: _('Language'),
@@ -41,7 +56,8 @@ export default class HerkulPreferences extends ExtensionPreferences {
         const languages = [
             { id: 'en', name: 'English' },
             { id: 'tr', name: 'Türkçe' },
-            { id: 'de', name: 'Deutsch' }
+            { id: 'de', name: 'Deutsch' },
+            { id: 'ar', name: 'العربية' }
         ];
 
         const langRow = new Adw.ComboRow({
@@ -113,7 +129,37 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
         return notifyGroup;
     }
+    
+    // _loadTranslations(locale) {
+    //     GLib.setenv('LANGUAGE', locale, true);
+    //     let localeDir = GLib.build_filenamev([this.path, 'locale']);
+    //     try {
+    //         Gettext.bindtextdomain('herkul', localeDir);
+    //         Gettext.textdomain('herkul');
+    //         this._window.set_title(_('Prayer Times Settings'));
+    //     } catch (e) {
+    //         console.error('[Herkul] Translation error:', e);
+    //     }
+    // }
 
+    // _bindTextDomain() {
+    //     let localeDir = GLib.build_filenamev([this.path, 'locale']);
+    //     let currentLang = this.getSettings().get_string('language');
+        
+    //     GLib.setenv('LANGUAGE', currentLang, true);
+    //     Gettext.bindtextdomain('herkul', localeDir);
+    //     Gettext.textdomain('herkul');
+    // }
+    _bindTextDomain() {
+        let localeDir = GLib.build_filenamev([this.path, 'locale']);
+        let currentLang = this.getSettings().get_string('language');
+        GLib.setenv('LANGUAGE', currentLang, true);
+    }
+    
+    _loadTranslations(locale) {
+        GLib.setenv('LANGUAGE', locale, true);
+        this._window.set_title(_('Prayer Times Settings'));
+    }
     _createCityGroup(settings) {
         const citiesGroup = new Adw.PreferencesGroup({
             title: _('Default City'),

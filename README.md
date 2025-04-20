@@ -2,7 +2,8 @@
 
 # Herkul GNOME Shell Uzantısı
 
-Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır. Bu uzantı, Diyanet İşleri Başkanlığı'nın web sitesinden namaz vakitlerini gösterir ve Herkul radyosunu dinleme imkanı sunar.
+Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır. Bu uzantı, Diyanet İşleri Başkanlığı'nın web sitesinden namaz vakitlerini gösterir, hava durumu bilgisi sunar ve Herkul radyosunu dinleme imkanı sunar.
+
 
 ## Herkul
 
@@ -20,10 +21,12 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 
 - 🕌 Diyanet'in web sitesinden güncel namaz vakitleri
 - 🌍 Birçok şehir için destek (Türkiye, Almanya, ABD, İngiltere vb.)
+- 🌤️ OpenWeatherMap üzerinden güncel hava durumu bilgileri
 - 🔔 Namaz vakti yaklaştığında bildirim sistemi
 - 🎵 Entegre Herkul Radyo yayını (https://herkul.org/)
 - 🎨 GNOME Shell temasıyla uyumlu görünüm
 - 🔄 Otomatik güncellenen vakitler
+- 🌐 Çoklu dil desteği (Türkçe, İngilizce, Almanca)
 - ⚙️ Özelleştirilebilir ayarlar
 
 ## Gereksinimler
@@ -31,6 +34,7 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 - GNOME Shell 45, 46 veya 47
 - GStreamer (ses çalma özelliği için)
 - İnternet bağlantısı
+- [OpenWeatherMap](https://home.openweathermap.org) API anahtarı (hava durumu için) sayfasına üye olup [apikey](https://home.openweathermap.org/api_keys) alabilirsiniz.
 
 ## Kurulum
 
@@ -77,6 +81,8 @@ Uzantı ayarlarına erişmek için:
 Ayarlarda şunları özelleştirebilirsiniz:
 - Bildirimler (açık/kapalı)
 - Varsayılan şehir seçimi
+- Dil seçimi (Türkçe/İngilizce/Almanca)
+- OpenWeatherMap API anahtarı
 
 ## Desteklenen Şehirler
 
@@ -92,14 +98,20 @@ Yeni şehirler eklemek istiyorsanız, `cities.json` dosyasını düzenleyebilirs
 ```json
 {
   "cities": [
-    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9541/prayer-time-for-istanbul" },
-    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/prayer-time-for-ankara" },
+    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9541/prayer-time-for-istanbul", "weatherId": "745044" },
+    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/prayer-time-for-ankara", "weatherId": "323786" },
+    //
     // Daha fazla şehir ekleyebilirsiniz...
+    //
+    { "name": "Medine", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/16308/medine-icin-namaz-vakti", "weatherId": "109223" },
+    { "name": "Mekke", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/16309/mekke-icin-namaz-vakti", "weatherId": "104515" }
   ]
 }
 ```
 
-**Not:** Eklediğiniz URL'lerin Diyanet İşleri resmi web sitesindeki doğru sayfalara yönlendirildiğinden emin olun.
+**Not:** Eklediğiniz URL'lerin Diyanet İşleri resmi web sitesindeki doğru sayfalara yönlendirildiğinden emin olun ve weatherId bilgilerinide https://home.openweathermap.org adresinden şehir isimleri bağlantılarından görebilirsiniz. örn. Köln için Cologne, DE sayfasına gidince https://openweathermap.org/city/2886242
+{ "name": "Köln", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11019/koln-icin-namaz-vakti", "weatherId": "2886242" },
+
 
 ## Sorun Giderme
 
@@ -110,6 +122,11 @@ Yeni şehirler eklemek istiyorsanız, `cities.json` dosyasını düzenleyebilirs
 2. Ses çalışmıyorsa:
    - GStreamer'ın kurulu olduğundan emin olun
    - Sistem ses ayarlarını kontrol edin
+
+3. Hava durumu görünmüyorsa:
+   - OpenWeatherMap API anahtarının doğru girildiğinden emin olun
+   - İnternet bağlantınızı kontrol edin
+
 
 ## Geliştirme
 

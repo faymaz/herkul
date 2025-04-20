@@ -1,0 +1,93 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: herkul@faymaz.github.com\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-22 23:50+0100\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+# Prayer names
+#: extension.js:38
+msgid "Fajr"
+msgstr "الفجر"
+
+msgid "Sunrise"
+msgstr "الشروق"
+
+msgid "Dhuhr"
+msgstr "الظهر"
+
+msgid "Asr"
+msgstr "العصر"
+
+msgid "Maghrib"
+msgstr "المغرب"
+
+msgid "Isha"
+msgstr "العشاء"
+
+msgid "Loading..."
+msgstr "جار التحميل..."
+
+msgid "Herkul Radio"
+msgstr "راديو هيركول"
+
+msgid "Select City"
+msgstr "اختر المدينة"
+
+msgid "Language"
+msgstr "اللغة"
+
+msgid "Settings"
+msgstr "الإعدادات"
+
+msgid "Prayer Times Settings"
+msgstr "إعدادات أوقات الصلاة"
+
+msgid "Select interface language"
+msgstr "اختر لغة الواجهة"
+
+msgid "Interface Language"
+msgstr "لغة الواجهة"
+
+msgid "Notifications"
+msgstr "الإشعارات"
+
+msgid "Configure notification settings"
+msgstr "تكوين إعدادات الإشعارات"
+
+msgid "Enable Notifications"
+msgstr "تمكين الإشعارات"
+
+msgid "Show notifications before prayer times"
+msgstr "عرض الإشعارات قبل أوقات الصلاة"
+
+msgid "Enable Sound"
+msgstr "تمكين الصوت"
+
+msgid "Play sound with notifications"
+msgstr "تشغيل الصوت مع الإشعارات"
+
+msgid "Default City"
+msgstr "المدينة الافتراضية"
+
+msgid "Select default city for prayer times"
+msgstr "اختر المدينة الافتراضية لأوقات الصلاة"
+
+msgid "Error loading city list"
+msgstr "خطأ في تحميل قائمة المدن"
+
+msgid "Weather Settings"
+msgstr "إعدادات الطقس"
+
+msgid "Configure OpenWeatherMap settings"
+msgstr "تكوين إعدادات OpenWeatherMap"
+
+msgid "API Key"
+msgstr "مفتاح API"
+
+msgid "Error"
+msgstr "خطأ"
