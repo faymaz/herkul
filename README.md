@@ -59,6 +59,7 @@ cp -r herkul ~/.local/share/gnome-shell/extensions/herkul@faymaz.github.com
 1. [extensions.gnome.org](https://extensions.gnome.org) adresini ziyaret edin
 2. "Herkul" uzantısını arayın
 3. Uzantı sayfasındaki düğmeyi kullanarak kurulumu yapın
+4. Şayet bulamazsanız [Herkul GNOME Shell Uzantısı](https://extensions.gnome.org/extension/7810/herkul/)
 
 ## Kullanım
 
