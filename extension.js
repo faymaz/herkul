@@ -235,7 +235,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._radioPlaying = false;
             this._tryNextUrl();
         }
-    
+    }
+
     _tryNextUrl() {
         const currentStation = this._radioStations[this._currentStationIndex];
         if (!currentStation) return;
@@ -245,7 +246,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         // Eğer orijinal URL'ye geri döndüysek, radyoyu durdur
         if (this._currentUrlIndex === 0) {
-            console.log('[Herkul] Tüm URL'ler başarısız oldu');
+            console.log('[Herkul] Tüm URL\'ler başarısız oldu');
             this._radioPlaying = false;
             return;
         }
@@ -260,46 +261,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this._activeTimers.add(retryTimer);
     }
-    
-    // _checkRadioStatus() metoduna ekleyin - mevcut if bloğunun içine:
-    if (state !== Gst.State.PLAYING && state !== Gst.State.PAUSED) {
-        console.log(`[Herkul] Radyo durumu anormal: ${state}, yeniden başlatılıyor`);
-        this._scheduleRadioRestart();
-        this._tryNextUrl(); // Bu satırı ekleyin
-    }
-    
-    // _setupRadioStateMonitoring() metodunda mesaj hatası bölümüne ekleyin:
-    if (message.type === Gst.MessageType.ERROR) {
-        const [error, debug] = message.parse_error();
-        console.error(`[Herkul] GStreamer hatası: ${error.message} (${debug})`);
-        this._scheduleRadioRestart();
-        this._tryNextUrl(); // Bu satırı ekleyin
-    }
-    
-    _changeStation(stationId) {
-        if (this._isDestroyed) return;
-        
-        const stationIndex = this._radioStations.findIndex(station => station.id === stationId);
-        if (stationIndex === -1) return;
-        
-        this._currentStationIndex = stationIndex;
-        this._currentStation = stationId;
-        this._currentUrlIndex = 0;
-        this._settings.set_string('current-station', stationId);
-        
-        if (this._radioPlaying) {
-            this._stopRadio();
-            const restartTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
-                this._startRadio();
-                return GLib.SOURCE_REMOVE;
-            });
-            this._activeTimers.add(restartTimer);
-        }
-        
-        this._rebuildMenu();
-    }
 
-    
     _checkRadioStatus() {
         if (!this._radioPlayer || !this._radioPlaying || this._isDestroyed) return false;
         
@@ -308,13 +270,13 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             if (state !== Gst.State.PLAYING && state !== Gst.State.PAUSED) {
                 console.log(`[Herkul] Radyo durumu anormal: ${state}, yeniden başlatılıyor`);
                 this._scheduleRadioRestart();
+                this._tryNextUrl();
             }
         } catch (error) {
             console.error(`[Herkul] Durum kontrolü hatası: ${error.message}`);
         }
         return true;
     }
-
 
     _restartRadio() {
         if (!this._radioPlaying) return;
@@ -391,6 +353,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                         const [error, debug] = message.parse_error();
                         console.error(`[Herkul] GStreamer hatası: ${error.message} (${debug})`);
                         this._scheduleRadioRestart();
+                        this._tryNextUrl();
                     } 
                     else if (message.type === Gst.MessageType.EOS) {
                         console.log('[Herkul] Radyo akışı sona erdi');
@@ -436,6 +399,30 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             console.error(`[Herkul] Bus izleme hatası: ${error.message}`);
         }
     }
+
+    _changeStation(stationId) {
+        if (this._isDestroyed) return;
+        
+        const stationIndex = this._radioStations.findIndex(station => station.id === stationId);
+        if (stationIndex === -1) return;
+        
+        this._currentStationIndex = stationIndex;
+        this._currentStation = stationId;
+        this._currentUrlIndex = 0;
+        this._settings.set_string('current-station', stationId);
+        
+        if (this._radioPlaying) {
+            this._stopRadio();
+            const restartTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+                this._startRadio();
+                return GLib.SOURCE_REMOVE;
+            });
+            this._activeTimers.add(restartTimer);
+        }
+        
+        this._rebuildMenu();
+    }
+
     _toggleRadio() {
         if (this._radioPlaying) {
             this._stopRadio();
@@ -567,8 +554,13 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             case 'apikey':
                 this._fetchWeatherData();
                 break;
+            case 'current-station':
+                const stationId = this._settings.get_string('current-station');
+                if (stationId !== this._currentStation) {
+                    this._changeStation(stationId);
+                }
+                break;
         }
-    }
     }
     _updateLabels() {
        
@@ -670,33 +662,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(settingsButton);
     }
     
-    // _onSettingsChanged() metoduna ekleyin:
-    _onSettingsChanged(settings, key) {
-        switch(key) {
-            case 'default-city':
-                this._selectedCity = this._settings.get_string('default-city');
-                this._fetchPrayerTimes();
-                this._fetchWeatherData();
-                this._rebuildMenu();
-                break;
-            case 'notify-enabled':
-                this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
-                break;
-            case 'sound-enabled':
-                this._soundEnabled = this._settings.get_boolean('sound-enabled');
-                break;
-            case 'apikey':
-                this._fetchWeatherData();
-                break;
-            case 'current-station':
-                const stationId = this._settings.get_string('current-station');
-                if (stationId !== this._currentStation) {
-                    this._changeStation(stationId);
-                }
-                break;
-        }
-    }
-
     async _fetchWeatherData() {
         const apiKey = this._settings.get_string('apikey');
         if (!apiKey) return;
