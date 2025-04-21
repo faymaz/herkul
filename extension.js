@@ -85,6 +85,38 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._radioPlaying = false;
         this._radioPlayer = null;
         this._initHttpSession();
+        this._radioStations = [
+            {
+                id: 'herkul',
+                name: _("Herkul Radio"),
+                icon: 'herkul.png',
+                urls: [
+                    'https://play.radioking.io/herkulradyo',
+                    'https://listen.radioking.com/radio/721190/stream/787034',
+                    'https://s1.wohooo.net/proxy/herkulfo/stream'
+                ]
+            },
+            {
+                id: 'cihan',
+                name: _("Cihan Radio"),
+                icon: 'cihan.png',
+                urls: [
+                    'https://listen.radioking.com/radio/301204/stream/347869'
+                ]
+            },
+            {
+                id: 'sadecemuzik',
+                name: _("Sadece Müzik"),
+                icon: 'cihan_muzik.jpg',
+                urls: [
+                    'https://listen.radioking.com/radio/605425/stream/666847'
+                ]
+            }
+        ];
+        this._currentStation = this._settings.get_string('current-station') || 'herkul';
+        this._currentStationIndex = this._radioStations.findIndex(station => station.id === this._currentStation);
+        if (this._currentStationIndex === -1) this._currentStationIndex = 0;
+        this._currentUrlIndex = 0;
         try {
             this._icon = new St.Icon({
                 gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', 'herkul.png'])),
@@ -149,20 +181,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._buildMenu();
         this._startUpdating();
     }
+
     _startRadio() {
         try {
-           
             if (this._radioPlayer) {
                 this._radioPlayer.set_state(Gst.State.NULL);
                 this._radioPlayer = null;
             }
             
-           
             if (this._radioWatcherId && GLib.source_remove(this._radioWatcherId)) {
                 this._radioWatcherId = null;
             }
             
-           
             Gst.init(null);
             this._radioPlayer = Gst.ElementFactory.make('playbin', 'radio');
             
@@ -170,21 +200,24 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 throw new Error('GStreamer playbin oluşturulamadı');
             }
             
-           
+            // Mevcut istasyon bilgisini al
+            const currentStation = this._radioStations[this._currentStationIndex];
+            if (!currentStation) {
+                throw new Error('Radyo istasyonu bulunamadı');
+            }
             
-            this._radioPlayer.set_property('uri', 'https://play.radioking.io/herkulradyo');
-           
+            // URL'yi ayarla - önce mevcut URL indeksi, hata alınırsa sıradaki URL'yi dene
+            const url = currentStation.urls[this._currentUrlIndex] || currentStation.urls[0];
+            
+            this._radioPlayer.set_property('uri', url);
             this._radioPlayer.set_property('buffer-size', 2097152);
             this._radioPlayer.set_property('buffer-duration', 5000000000);
             
-           
             this._setupRadioStateMonitoring();
             
-           
             this._radioPlayer.set_state(Gst.State.PLAYING);
             this._radioPlaying = true;
             
-           
             this._radioWatcherId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
                 if (this._isDestroyed || !this._radioPlaying) {
                     return GLib.SOURCE_REMOVE;
@@ -193,7 +226,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 return GLib.SOURCE_CONTINUE;
             });
             
-           
             if (this._radioWatcherId) {
                 this._activeTimers.add(this._radioWatcherId);
             }
@@ -201,9 +233,73 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         } catch (error) {
             console.error(`[Herkul] Radyo başlatma hatası: ${error}`);
             this._radioPlaying = false;
+            this._tryNextUrl();
         }
+    
+    _tryNextUrl() {
+        const currentStation = this._radioStations[this._currentStationIndex];
+        if (!currentStation) return;
+        
+        // Bir sonraki URL'ye geç
+        this._currentUrlIndex = (this._currentUrlIndex + 1) % currentStation.urls.length;
+        
+        // Eğer orijinal URL'ye geri döndüysek, radyoyu durdur
+        if (this._currentUrlIndex === 0) {
+            console.log('[Herkul] Tüm URL'ler başarısız oldu');
+            this._radioPlaying = false;
+            return;
+        }
+        
+        // Yeni URL ile tekrar başlat
+        console.log(`[Herkul] Yeni URL deneniyor: ${this._currentUrlIndex}`);
+        const retryTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+            if (this._radioPlaying) {
+                this._startRadio();
+            }
+            return GLib.SOURCE_REMOVE;
+        });
+        this._activeTimers.add(retryTimer);
+    }
+    
+    // _checkRadioStatus() metoduna ekleyin - mevcut if bloğunun içine:
+    if (state !== Gst.State.PLAYING && state !== Gst.State.PAUSED) {
+        console.log(`[Herkul] Radyo durumu anormal: ${state}, yeniden başlatılıyor`);
+        this._scheduleRadioRestart();
+        this._tryNextUrl(); // Bu satırı ekleyin
+    }
+    
+    // _setupRadioStateMonitoring() metodunda mesaj hatası bölümüne ekleyin:
+    if (message.type === Gst.MessageType.ERROR) {
+        const [error, debug] = message.parse_error();
+        console.error(`[Herkul] GStreamer hatası: ${error.message} (${debug})`);
+        this._scheduleRadioRestart();
+        this._tryNextUrl(); // Bu satırı ekleyin
+    }
+    
+    _changeStation(stationId) {
+        if (this._isDestroyed) return;
+        
+        const stationIndex = this._radioStations.findIndex(station => station.id === stationId);
+        if (stationIndex === -1) return;
+        
+        this._currentStationIndex = stationIndex;
+        this._currentStation = stationId;
+        this._currentUrlIndex = 0;
+        this._settings.set_string('current-station', stationId);
+        
+        if (this._radioPlaying) {
+            this._stopRadio();
+            const restartTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+                this._startRadio();
+                return GLib.SOURCE_REMOVE;
+            });
+            this._activeTimers.add(restartTimer);
+        }
+        
+        this._rebuildMenu();
     }
 
+    
     _checkRadioStatus() {
         if (!this._radioPlayer || !this._radioPlaying || this._isDestroyed) return false;
         
@@ -473,6 +569,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 break;
         }
     }
+    }
     _updateLabels() {
        
         if (this._label) {
@@ -484,6 +581,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     _rebuildMenu() {
         this._buildMenu();
     }
+
     _buildMenu() {
         this.menu.removeAll();
         if (!this._citiesData) {
@@ -500,22 +598,54 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             });
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }
-        let radioBox = new St.BoxLayout({ style_class: 'popup-menu-item' });
-        let radioIcon = new St.Icon({
-            gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', 'herkul.png'])),
-            style_class: 'popup-menu-icon',
-            icon_size: 16
+        
+        // Radyo menüsü
+        let radioMenu = new PopupMenu.PopupSubMenuMenuItem(_('Radyo İstasyonları'));
+        this._radioStations.forEach(station => {
+            let stationIcon = new St.Icon({
+                gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', station.icon])),
+                style_class: 'popup-menu-icon',
+                icon_size: 16
+            });
+            
+            let stationItem = new PopupMenu.PopupMenuItem(station.name);
+            stationItem.insert_child_at_index(stationIcon, 1);
+            
+            // Seçili istasyonu işaretle
+            if (station.id === this._currentStation) {
+                stationItem.setOrnament(PopupMenu.Ornament.DOT);
+            }
+            
+            stationItem.connect('activate', () => {
+                this._changeStation(station.id);
+            });
+            
+            radioMenu.menu.addMenuItem(stationItem);
         });
-        let radioItem = new PopupMenu.PopupSwitchMenuItem(_('Herkul Radio'), this._radioPlaying);
-        radioItem.insert_child_at_index(radioIcon, 1);
-        radioItem.connect('toggled', () => {
+        
+        this.menu.addMenuItem(radioMenu);
+        
+        // Radyo açma/kapama düğmesi
+        let radioToggle = new PopupMenu.PopupSwitchMenuItem(_('Radyo Çal/Durdur'), this._radioPlaying);
+        
+        let currentStation = this._radioStations[this._currentStationIndex];
+        if (currentStation) {
+            let toggleIcon = new St.Icon({
+                gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', currentStation.icon])),
+                style_class: 'popup-menu-icon',
+                icon_size: 16
+            });
+            radioToggle.insert_child_at_index(toggleIcon, 1);
+        }
+        
+        radioToggle.connect('toggled', () => {
             this._toggleRadio();
         });
-        this.menu.addMenuItem(radioItem);
+        this.menu.addMenuItem(radioToggle);
         
         let cityItem = new PopupMenu.PopupSubMenuMenuItem(_("Şehir Seçin"));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
+    
         this._citiesData.cities.forEach(city => {
             let item = new PopupMenu.PopupMenuItem(city.name);
             if (city.name === this._selectedCity) {
@@ -539,6 +669,34 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(settingsButton);
     }
+    
+    // _onSettingsChanged() metoduna ekleyin:
+    _onSettingsChanged(settings, key) {
+        switch(key) {
+            case 'default-city':
+                this._selectedCity = this._settings.get_string('default-city');
+                this._fetchPrayerTimes();
+                this._fetchWeatherData();
+                this._rebuildMenu();
+                break;
+            case 'notify-enabled':
+                this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
+                break;
+            case 'sound-enabled':
+                this._soundEnabled = this._settings.get_boolean('sound-enabled');
+                break;
+            case 'apikey':
+                this._fetchWeatherData();
+                break;
+            case 'current-station':
+                const stationId = this._settings.get_string('current-station');
+                if (stationId !== this._currentStation) {
+                    this._changeStation(stationId);
+                }
+                break;
+        }
+    }
+
     async _fetchWeatherData() {
         const apiKey = this._settings.get_string('apikey');
         if (!apiKey) return;

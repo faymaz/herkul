@@ -26,5 +26,10 @@
       <summary>OpenWeatherMap API Anahtarı</summary>
       <description>OpenWeatherMap servisine erişim için API Anahtarı</description>
     </key>
+    <key name="current-station" type="s">
+      <default>'herkul'</default>
+      <summary>Mevcut Radyo İstasyonu</summary>
+      <description>Son seçilen radyo istasyonu kimliği</description>
+    </key>
   </schema>
 </schemalist>

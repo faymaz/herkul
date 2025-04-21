@@ -15,13 +15,56 @@ export default class HerkulPreferences extends ExtensionPreferences {
         });
         const cityGroup = this._createCityGroup(settings);
         const weatherGroup = this._createWeatherGroup(settings);
-    
+        const radioGroup = this._createRadioGroup(settings);
         const notifyGroup = this._createNotificationGroup(settings);
+        
         page.add(cityGroup);
         page.add(weatherGroup);
+        page.add(radioGroup);
         page.add(notifyGroup);
         window.add(page);
     }
+    
+    _createRadioGroup(settings) {
+        const radioGroup = new Adw.PreferencesGroup({
+            title: _('Radyo Ayarları'),
+            description: _('Varsayılan radyo istasyonunu seçin')
+        });
+        
+        // Radyo istasyonları listesi - extension.js ile aynı olmalı
+        const radioStations = [
+            { id: 'herkul', name: _("Herkul Radio") },
+            { id: 'cihan', name: _("Cihan Radio") },
+            { id: 'sadecemuzik', name: _("Sadece Müzik") }
+        ];
+        
+        const stationNames = radioStations.map(station => station.name);
+        const stationIds = radioStations.map(station => station.id);
+        
+        const defaultStationRow = new Adw.ComboRow({
+            title: _('Varsayılan Radyo İstasyonu'),
+            model: new Gtk.StringList({
+                strings: stationNames
+            })
+        });
+        
+        // Mevcut istasyonu seç
+        const currentStation = settings.get_string('current-station');
+        const stationIndex = stationIds.indexOf(currentStation);
+        if (stationIndex !== -1) {
+            defaultStationRow.selected = stationIndex;
+        }
+        
+        // Değişiklikleri kaydet
+        defaultStationRow.connect('notify::selected', (widget) => {
+            const selectedId = stationIds[widget.selected];
+            settings.set_string('current-station', selectedId);
+        });
+        
+        radioGroup.add(defaultStationRow);
+        return radioGroup;
+    }
+    
     _createWeatherGroup(settings) {
         const weatherGroup = new Adw.PreferencesGroup({
             title: _('Hava Durumu Ayarları'),
@@ -37,6 +80,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
         weatherGroup.add(apiKeyRow);
         return weatherGroup;
     }
+    
     _createNotificationGroup(settings) {
         const notifyGroup = new Adw.PreferencesGroup({
             title: _('Bildirimleri Etkinleştir'),
@@ -70,6 +114,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
         notifyGroup.add(soundSwitch);
         return notifyGroup;
     }
+    
     _createCityGroup(settings) {
         const citiesGroup = new Adw.PreferencesGroup({
             title: _('Varsayılan Şehir'),
