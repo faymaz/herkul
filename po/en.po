@@ -115,6 +115,18 @@ msgstr ""
 msgid "Now Playing"
 msgstr ""
 
+msgid "Radio Stations"
+msgstr ""
+
+msgid "Cihan Radio"
+msgstr ""
+
+msgid "Sadece Müzik"
+msgstr ""
+
+msgid "Stop Radio"
+msgstr ""
+
 #~ msgid "Failed to load prayer times"
 #~ msgstr ""
 

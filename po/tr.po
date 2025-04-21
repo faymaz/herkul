@@ -115,6 +115,18 @@ msgstr "API Anahtarı"
 msgid "Now Playing"
 msgstr "Şimdi Çalıyor"
 
+msgid "Radio Stations"
+msgstr "Radyo İstasyonları"
+
+msgid "Cihan Radio"
+msgstr "Cihan Radyo"
+
+msgid "Sadece Müzik"
+msgstr "Sadece Müzik"
+
+msgid "Stop Radio"
+msgstr "Radyoyu Durdur"
+
 #~ msgid "Error"
 #~ msgstr "Hata"
 

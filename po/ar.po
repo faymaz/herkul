@@ -94,3 +94,15 @@ msgstr "خطأ"
 
 msgid "Now Playing"
 msgstr "يشتغل الآن"
+
+msgid "Radio Stations"
+msgstr "محطات الراديو"
+
+msgid "Cihan Radio"
+msgstr "راديو جيهان"
+
+msgid "Sadece Müzik"
+msgstr "الموسيقى فقط"
+
+msgid "Stop Radio"
+msgstr "إيقاف الراديو"

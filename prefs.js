@@ -142,8 +142,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
         try {
             const citiesPath = GLib.build_filenamev([this.path, 'cities.json']);
             const [success, contents] = GLib.file_get_contents(citiesPath);
-            
-            if (success) {
+    if (success) {
                 const citiesData = JSON.parse(new TextDecoder().decode(contents));
                 const cityNames = citiesData.cities.map(city => city.name);
 
@@ -154,15 +153,13 @@ export default class HerkulPreferences extends ExtensionPreferences {
                     })
                 });
 
-               
-                const currentCity = settings.get_string('default-city');
+           const currentCity = settings.get_string('default-city');
                 const cityIndex = cityNames.indexOf(currentCity);
                 if (cityIndex !== -1) {
                     defaultCityRow.selected = cityIndex;
                 }
 
-               
-                defaultCityRow.connect('notify::selected', (widget) => {
+           defaultCityRow.connect('notify::selected', (widget) => {
                     const selectedCity = cityNames[widget.selected];
                     settings.set_string('default-city', selectedCity);
                 });

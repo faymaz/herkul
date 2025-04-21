@@ -19,32 +19,6 @@ const WEATHER_ICONS = {
     'Fog': '🌫️'
 };
 
-const RADIO_STATIONS = [
-    { 
-        id: 'herkul', 
-        name: _("Herkul Radio"), 
-        urls: [
-            'https://play.radioking.io/herkulradyo',
-            'https://listen.radioking.com/radio/721190/stream/787034',
-            'https://s1.wohooo.net/proxy/herkulfo/stream'
-        ]
-    },
-    { 
-        id: 'cihan', 
-        name: _("Cihan Radio"), 
-        urls: [
-            'https://listen.radioking.com/radio/301204/stream/347869'
-        ]
-    },
-    { 
-        id: 'sadecemuzik', 
-        name: _("Sadece Müzik"), 
-        urls: [
-            'https://listen.radioking.com/radio/605425/stream/666847'
-        ]
-    }
-];
-
 const API_BASE = 'https://api.openweathermap.org/data/2.5/weather';
 
 const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
@@ -87,7 +61,6 @@ function loadCitiesData(extensionPath) {
         return null;
     }
 }
-
 const PrayerTimesIndicator = GObject.registerClass(
 class PrayerTimesIndicator extends PanelMenu.Button {
     _init(extension) {
@@ -115,6 +88,31 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._currentRadioStation = null;
         this._currentUrlIndex = 0;
         this._radioRetryCount = 0;
+        this._radioStations = [
+            { 
+                id: 'herkul', 
+                name: _("Herkul Radio"), 
+                urls: [
+                    'https://play.radioking.io/herkulradyo',
+                    'https://listen.radioking.com/radio/721190/stream/787034',
+                    'https://s1.wohooo.net/proxy/herkulfo/stream'
+                ]
+            },
+            { 
+                id: 'cihan', 
+                name: _("Cihan Radio"), 
+                urls: [
+                    'https://listen.radioking.com/radio/301204/stream/347869'
+                ]
+            },
+            { 
+                id: 'sadecemuzik', 
+                name: _("Sadece Müzik"), 
+                urls: [
+                    'https://listen.radioking.com/radio/605425/stream/666847'
+                ]
+            }
+        ];
         try {
             this._icon = new St.Icon({
                 gicon: Gio.icon_new_for_string(GLib.build_filenamev([this._extension.path, 'icons', 'herkul.png'])),
@@ -179,14 +177,12 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._buildMenu();
         this._startUpdating();
     }
-
     _startRadio(stationId) {
         try {
-          
-            const station = RADIO_STATIONS.find(s => s.id === stationId) || RADIO_STATIONS[0];
+            stationId = stationId || 'herkul';
+            const station = this._radioStations.find(s => s.id === stationId) || this._radioStations[0];
             this._currentRadioStation = stationId;
-            
-          
+            this._currentUrlIndex = 0;
             this._currentUrlIndex = 0;
                
             if (this._radioPlayer) {
@@ -197,25 +193,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             if (this._radioWatcherId && GLib.source_remove(this._radioWatcherId)) {
                 this._radioWatcherId = null;
             }
-                
             Gst.init(null);
             this._radioPlayer = Gst.ElementFactory.make('playbin', 'radio');
                 
             if (!this._radioPlayer) {
                 throw new Error('GStreamer playbin oluşturulamadı');
             }
-                
-          
             this._radioPlayer.set_property('uri', station.urls[this._currentUrlIndex]);
-           
             this._radioPlayer.set_property('buffer-size', 2097152);
             this._radioPlayer.set_property('buffer-duration', 5000000000);
-                
             this._setupRadioStateMonitoring();
-                
             this._radioPlayer.set_state(Gst.State.PLAYING);
             this._radioPlaying = true;
-                
             this._radioWatcherId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
                 if (this._isDestroyed || !this._radioPlaying) {
                     return GLib.SOURCE_REMOVE;
@@ -223,20 +212,16 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 this._checkRadioStatus();
                 return GLib.SOURCE_CONTINUE;
             });
-                
             if (this._radioWatcherId) {
                 this._activeTimers.add(this._radioWatcherId);
             }
-                
         } catch (error) {
             console.error(`[Herkul] Radyo başlatma hatası: ${error}`);
             this._radioPlaying = false;
         }
     }
-
     _checkRadioStatus() {
         if (!this._radioPlayer || !this._radioPlaying || this._isDestroyed) return false;
-        
         try {
             const [ret, state, pending] = this._radioPlayer.get_state(0);
             if (state !== Gst.State.PLAYING && state !== Gst.State.PAUSED) {
@@ -254,11 +239,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
         return true;
     }
-
-
     _restartRadio() {
         if (!this._radioPlaying) return;
-        
         console.log('[Herkul] Radyo yeniden başlatılıyor...');
         const restartTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
            
@@ -275,7 +257,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this._activeTimers.add(restartTimerId);
     }
-
     _scheduleRadioRestart() {
         if (!this._radioPlaying || this._isDestroyed) return;
         if (this._radioRestartTimerId) return;
@@ -307,19 +288,16 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             console.error(`[Herkul] Yeniden başlatma planlama hatası: ${error.message}`);
         }
     }
-
     _tryNextRadioUrl() {
         if (!this._currentRadioStation || !this._radioPlaying) {
             return false;
         }
-        
         try {
-            const station = RADIO_STATIONS.find(s => s.id === this._currentRadioStation);
+            const station = this._radioStations.find(s => s.id === this._currentRadioStation);
             if (!station) {
                 console.error(`[Herkul] Radyo istasyonu bulunamadı: ${this._currentRadioStation}`);
                 return false;
             }
-            
           
             this._currentUrlIndex = (this._currentUrlIndex + 1) % station.urls.length;
             console.log(`[Herkul] Alternatif URL'ye geçiliyor: ${this._currentUrlIndex + 1}/${station.urls.length}`);
@@ -334,10 +312,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         } catch (error) {
             console.error(`[Herkul] URL değiştirme hatası: ${error.message}`);
         }
-        
         return false;
     }
-
     _setupRadioStateMonitoring() {
         if (!this._radioPlayer) return;
         try {
@@ -349,19 +325,14 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._busMessageId = null;
                 }
             }
-            
-          
             bus.add_signal_watch();
             this._radioBusWatch = true;
             this._busMessageId = bus.connect('message', (bus, message) => {
                 if (!this._radioPlayer || this._isDestroyed) return;
-                
                 try {
                     if (message.type === Gst.MessageType.ERROR) {
                         const [error, debug] = message.parse_error();
                         console.error(`[Herkul] GStreamer hatası: ${error.message} (${debug})`);
-                        
-                      
                         if (this._tryNextRadioUrl()) {
                             console.log('[Herkul] Alternatif URL üzerinden yeniden bağlanılıyor');
                         } else {
@@ -371,8 +342,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     } 
                     else if (message.type === Gst.MessageType.EOS) {
                         console.log('[Herkul] Radyo akışı sona erdi');
-                        
-                      
                         if (this._tryNextRadioUrl()) {
                             console.log('[Herkul] Alternatif URL üzerinden yeniden bağlanılıyor');
                         } else {
@@ -394,8 +363,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     else if (message.type === Gst.MessageType.BUFFERING) {
                         const percent = message.parse_buffering();
                         console.log(`[Herkul] Radyo tamponu: %${percent}`);
-                        
-                      
                         try {
                           
                             if (percent < 100) {
@@ -421,11 +388,14 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             console.error(`[Herkul] Bus izleme hatası: ${error.message}`);
         }
     }
-    _toggleRadio() {
-        if (this._radioPlaying) {
+    _toggleRadio(stationId) {
+        if (this._radioPlaying && this._currentRadioStation === stationId) {
             this._stopRadio();
         } else {
-            this._startRadio();
+            if (this._radioPlaying) {
+                this._stopRadio();
+            }
+            this._startRadio(stationId);
         }
     }
     _clearTimers() {
@@ -455,7 +425,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             console.error(`[Herkul] Error starting updates: ${error}`);
         }
     }
-
     _initHttpSession() {
         try {
             this._httpSession = new Soup.Session({
@@ -475,7 +444,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
         }
     }
-
     _showLoading() {
         if (this._fetchingIndicator) {
             try {
@@ -596,8 +564,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             style_class: 'popup-menu-icon',
             icon_size: 16
         });
+        let radioSubMenu = new PopupMenu.PopupSubMenuMenuItem(_("Radio Stations"));
         if (this._radioPlaying && this._currentRadioStation) {
-            const station = RADIO_STATIONS.find(s => s.id === this._currentRadioStation);
+            const station = this._radioStations.find(s => s.id === this._currentRadioStation);
             if (station) {
                 const infoItem = new PopupMenu.PopupMenuItem(
                     `${_("Now Playing")}: ${station.name} (${this._currentUrlIndex + 1}/${station.urls.length})`,
@@ -607,16 +576,31 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 radioSubMenu.menu.addMenuItem(infoItem);
             }
         }
-        let radioItem = new PopupMenu.PopupSwitchMenuItem(_('Herkul Radio'), this._radioPlaying);
-        radioItem.insert_child_at_index(radioIcon, 1);
-        radioItem.connect('toggled', () => {
-            this._toggleRadio();
+        this._radioStations.forEach(station => {
+            let stationItem = new PopupMenu.PopupMenuItem(station.name);
+            
+          
+            if (this._radioPlaying && this._currentRadioStation === station.id) {
+                stationItem.setOrnament(PopupMenu.Ornament.DOT);
+            }
+            stationItem.connect('activate', () => {
+                this._toggleRadio(station.id);
+                this._rebuildMenu(); // Menüyü güncelle
+            });
+            radioSubMenu.menu.addMenuItem(stationItem);
         });
-        this.menu.addMenuItem(radioItem);
-        
+        if (this._radioPlaying) {
+            radioSubMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            let stopRadioItem = new PopupMenu.PopupMenuItem(_("Stop Radio"));
+            stopRadioItem.connect('activate', () => {
+                this._stopRadio();
+                this._rebuildMenu();
+            });
+            radioSubMenu.menu.addMenuItem(stopRadioItem);
+        }
+        this.menu.addMenuItem(radioSubMenu);
         let cityItem = new PopupMenu.PopupSubMenuMenuItem(_("Select City"));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
         this._citiesData.cities.forEach(city => {
             let item = new PopupMenu.PopupMenuItem(city.name);
             if (city.name === this._selectedCity) {
@@ -773,7 +757,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._label.text = 'Failed to load prayer times';
         }
     }
-
     _updateDisplay() {
         if (this._isDestroyed) return;
 
