@@ -112,6 +112,9 @@ msgstr "OpenWeatherMap ayarlarını yapılandır"
 msgid "API Key"
 msgstr "API Anahtarı"
 
+msgid "Now Playing"
+msgstr "Şimdi Çalıyor"
+
 #~ msgid "Error"
 #~ msgstr "Hata"
 

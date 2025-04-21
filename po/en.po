@@ -112,6 +112,9 @@ msgstr ""
 msgid "API Key"
 msgstr ""
 
+msgid "Now Playing"
+msgstr ""
+
 #~ msgid "Failed to load prayer times"
 #~ msgstr ""
 

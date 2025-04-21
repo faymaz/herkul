@@ -112,6 +112,9 @@ msgstr "OpenWeatherMap-Einstellungen konfigurieren"
 msgid "API Key"
 msgstr "API-Schlüssel"
 
+msgid "Now Playing"
+msgstr "Jetzt läuft"
+
 #~ msgid "Failed to load prayer times"
 #~ msgstr "Gebetszeiten konnten nicht geladen werden"
 

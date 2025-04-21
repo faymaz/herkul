@@ -91,3 +91,6 @@ msgstr "مفتاح API"
 
 msgid "Error"
 msgstr "خطأ"
+
+msgid "Now Playing"
+msgstr "يشتغل الآن"
