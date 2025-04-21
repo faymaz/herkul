@@ -9,7 +9,6 @@ export default class HerkulPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
         const settings = this.getSettings();
-        this._bindTextDomain();
         const page = new Adw.PreferencesPage({
             title: _('Namaz Vakitleri Ayarları'),
             icon_name: 'preferences-system-time-symbolic',
@@ -21,7 +20,6 @@ export default class HerkulPreferences extends ExtensionPreferences {
         page.add(cityGroup);
         page.add(weatherGroup);
         page.add(notifyGroup);
-        page.add(langGroup);
         window.add(page);
     }
     _createWeatherGroup(settings) {

@@ -513,7 +513,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(radioItem);
         
-        let cityItem = new PopupMenu.PopupSubMenuMenuItem(_("Select City"));
+        let cityItem = new PopupMenu.PopupSubMenuMenuItem(_("Şehir Seçin"));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         this._citiesData.cities.forEach(city => {
@@ -531,7 +531,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(cityItem);        
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        const settingsButton = new PopupMenu.PopupMenuItem(_('Settings'));
+        const settingsButton = new PopupMenu.PopupMenuItem(_('Ayarlar'));
         settingsButton.connect('activate', () => {
             if (this._extension) {
                 this._extension.openPreferences();
