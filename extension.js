@@ -40,15 +40,14 @@ const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => 
 
 function getPrayerMap() {
     return {
-        'imsak': _("Fajr"),
-        'gunes': _("Sunrise"),
-        'ogle': _("Dhuhr"),
-        'ikindi': _("Asr"),
-        'aksam': _("Maghrib"),
-        'yatsi': _("Isha")
+        'imsak': "İmsak",
+        'gunes': "Güneş",
+        'ogle': "Öğle",
+        'ikindi': "İkindi",
+        'aksam': "Akşam",
+        'yatsi': "Yatsı"
     };
 }
-
 function loadCitiesData(extensionPath) {
     try {
         let citiesPath = GLib.build_filenamev([extensionPath, 'cities.json']);
@@ -57,7 +56,7 @@ function loadCitiesData(extensionPath) {
         let data = JSON.parse(citiesJson);
         return data;
     } catch (error) {
-        console.error('[PrayerTimes] Error loading cities:', error);
+        console.error('[Herkul] Şehirler yüklenirken hata oluştu:', error);
         return null;
     }
 }
@@ -92,7 +91,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 style_class: 'system-status-icon'
             });
         } catch (error) {
-            console.error('[PrayerTimes] Error loading icon:', error);
+            console.error('[Herkul] Simge yüklenirken hata oluştu:', error);
             this._icon = new St.Icon({
                 icon_name: 'preferences-system-time-symbolic',
                 style_class: 'system-status-icon'
@@ -172,7 +171,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
             
            
-            //this._radioPlayer.set_property('uri', 'https://s1.wohooo.net/proxy/herkulfo/stream');
+            
             this._radioPlayer.set_property('uri', 'https://play.radioking.io/herkulradyo');
            
             this._radioPlayer.set_property('buffer-size', 2097152);
@@ -372,7 +371,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._activeTimers.add(prayerTimerId);
             this._activeTimers.add(weatherTimerId);
         } catch (error) {
-            console.error(`[Herkul] Error starting updates: ${error}`);
+            console.error(`[Herkul] Güncellemeler başlatılırken hata oluştu: ${error}`);
         }
     }
 
@@ -384,7 +383,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             });
             this._retryCount = 0;
         } catch (error) {
-            console.error(`[PrayerTimes] Error initializing HTTP session: ${error}`);
+            console.error(`[Herkul] HTTP oturumu başlatılırken hata oluştu: ${error}`);
             if (this._retryCount < this._maxRetries) {
                 this._retryCount++;
                 const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
@@ -404,7 +403,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._fetchingIndicator.add_style_class_name('loading-indicator');
                 }
             } catch (error) {
-                console.error(`[PrayerTimes] Error showing loading indicator: ${error}`);
+                console.error(`[Herkul] Yükleme göstergesi gösterilirken hata oluştu: ${error}`);
             }
         }
     }
@@ -416,16 +415,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._fetchingIndicator.remove_style_class_name('loading-indicator');
                 }
             } catch (error) {
-                console.error(`[PrayerTimes] Error hiding loading indicator: ${error}`);
+                console.error(`[Herkul] Yükleme göstergesi gizlenirken hata oluştu: ${error}`);
             }
-        }
-    }
-    _loadTranslations(lang) {
-        try {
-            let locale = lang || 'en';
-            GLib.setenv('LANGUAGE', locale, true);
-        } catch (e) {
-            console.error('[Herkul] Error loading translations:', e);
         }
     }
     _stopRadio() {
@@ -465,7 +456,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     }
     _onSettingsChanged(settings, key) {
         switch(key) {
-            case 'language':
             case 'default-city':
                 this._selectedCity = this._settings.get_string('default-city');
                 this._fetchPrayerTimes();
@@ -497,7 +487,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     _buildMenu() {
         this.menu.removeAll();
         if (!this._citiesData) {
-            console.debug('[PrayerTimes] No cities data available');
+            console.debug('[Herkul] Şehir verisi mevcut değil');
             return;
         }
         let prayerNames = getPrayerMap();
@@ -541,27 +531,6 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(cityItem);        
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        let langItem = new PopupMenu.PopupSubMenuMenuItem(_("Language"));
-        const languages = [
-            { id: 'en', name: 'English' },
-            { id: 'tr', name: 'Türkçe' },
-            { id: 'de', name: 'Deutsch' },
-            { id: 'ar', name: 'العربية' }
-        ];
-        languages.forEach(lang => {
-            let item = new PopupMenu.PopupMenuItem(lang.name);
-            if (this._settings.get_string('language') === lang.id) {
-                item.setOrnament(PopupMenu.Ornament.DOT);
-            }
-            item.connect('activate', () => {
-                this._settings.set_string('language', lang.id);
-                this._loadTranslations(lang.id);
-                this._rebuildMenu();
-            });
-            langItem.menu.addMenuItem(item);
-        });
-        this.menu.addMenuItem(langItem);
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         const settingsButton = new PopupMenu.PopupMenuItem(_('Settings'));
         settingsButton.connect('activate', () => {
             if (this._extension) {
@@ -584,7 +553,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 this._updateWeatherDisplay(data);
             }
         } catch (error) {
-            console.error('[Herkul] Weather error:', error);
+            console.error('[Herkul] Hava durumu hatası:', error);
         }
     }
     _updateWeatherDisplay(data) {
@@ -600,7 +569,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 this._tempLabel.text = `${temp}°C`;
             }
         } catch (error) {
-            console.error('[Herkul] Display update error:', error);
+            console.error('[Herkul] Ekran güncelleme hatası:', error);
         }
     }
     _updateWeatherMenu() {
@@ -622,18 +591,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     }
     async _fetchPrayerTimes() {
         if (!this._citiesData) {
-            console.debug('[PrayerTimes] No cities data available');
+            console.debug('[Herkul] Şehir verisi mevcut değil');
             return;
         }
         let cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
         if (!cityData) {
-            console.warn(`[PrayerTimes] City not found: ${this._selectedCity}`);
+            console.warn(`[Herkul] Şehir bulunamadı: ${this._selectedCity}`);
             return;
         }
         this._showLoading();
         try {
             if (!this._httpSession) {
-                console.debug('[PrayerTimes] HTTP session not initialized, retrying...');
+                console.debug('[Herkul] HTTP oturumu başlatılmadı, yeniden deneniyor...');
                 this._initHttpSession();
                 return;
             }
@@ -661,13 +630,13 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 times[name] = time;
             }
             if (Object.keys(times).length === 0) {
-                throw new Error('No prayer times found in response');
+                throw new Error('Cevapta namaz vakitleri bulunamadı');
             }
             this._prayerTimes = times;
             this._updateDisplay();
             this._hideLoading();
         } catch (error) {
-            console.error(`[PrayerTimes] Error fetching prayer times: ${error}`);
+            console.error(`[Herkul] Namaz vakitleri alınırken hata oluştu: ${error}`);
             this._hideLoading();
             if (error.message.includes('not initialized') || error.message.includes('Xwayland')) {
                 if (this._retryCount < this._maxRetries) {
@@ -679,7 +648,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._activeTimers.add(timerId);
                 }
             }
-            this._label.text = 'Failed to load prayer times';
+            this._label.text = 'Namaz vakitleri yüklenemedi';
         }
     }
 
@@ -702,7 +671,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 }
             }
         } catch (error) {
-            console.error('[PrayerTimes] Display update error:', error);
+            console.error('[Herkul] Ekran güncelleme hatası:', error);
             if (this._label && !this._label.is_finalized?.()) {
                 this._label.text = 'Error';
             }
@@ -719,7 +688,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 try {
                     GLib.source_remove(timerId);
                 } catch (error) {
-                    console.error(`[PrayerTimes] Error removing timer ${timerId}: ${error}`);
+                    console.error(`[Herkul] Zamanlayıcı kaldırılırken hata oluştu ${timerId}: ${error}`);
                 }
             });
             this._activeTimers.clear();
@@ -731,7 +700,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 try {
                     this[widgetName].destroy();
                 } catch (error) {
-                    console.error(`[Herkul] Error destroying ${widgetName}:`, error);
+                    console.error(`[Herkul] Hata yok etme ${widgetName}:`, error);
                 }
                 this[widgetName] = null;
             }
@@ -819,7 +788,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     }
                 }
             } catch (error) {
-                console.error(`[PrayerTimes] Error playing sound: ${error}`);
+                console.error(`[Herkul] Ses çalınırken hata oluştu: ${error}`);
                 this._isPlayingSound = false;
             }
         }
@@ -838,7 +807,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._activeTimers.add(timerId);
             return timerId;
         } catch (error) {
-            console.error(`[PrayerTimes] Error adding timer: ${error}`);
+            console.error(`[Herkul] Zamanlayıcı eklenirken hata oluştu: ${error}`);
             return null;
         }
     }
@@ -855,7 +824,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }, 60);
             this._activeTimers.add(timerId);
         } catch (error) {
-            console.error(`[PrayerTimes] Error starting updates: ${error}`);
+            console.error(`[Herkul] Güncellemeler başlatılırken hata oluştu: ${error}`);
         }
     }
     destroy() {
@@ -915,12 +884,12 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 });
 export default class PrayerTimesExtension extends Extension {
     enable() {
-        console.debug('[PrayerTimes] Enabling extension');
+        console.debug('[Herkul] Uzantıyı etkinleştirme');
         this._indicator = new PrayerTimesIndicator(this);
         Main.panel.addToStatusArea('prayer-times', this._indicator);
     }
     disable() {
-        console.debug('[PrayerTimes] Disabling extension');
+        console.debug('[Herkul] Uzantı devre dışı bırakılıyor');
         if (this._indicator) {
             this._indicator.destroy();
             this._indicator = null;
