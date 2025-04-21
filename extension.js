@@ -215,7 +215,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 this._scheduleRadioRestart();
             }
         } catch (error) {
-            console.log(`[Herkul] Durum kontrolü hatası: ${error.message}`);
+            console.error(`[Herkul] Durum kontrolü hatası: ${error.message}`);
         }
         return true;
     }
@@ -329,7 +329,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                                 this._radioPlayer.set_state(Gst.State.PLAYING);
                             }
                         } catch (e) {
-                            console.log(`[Herkul] Tampon durum kontrolü hatası: ${e.message}`);
+                            console.error(`[Herkul] Tampon durum kontrolü hatası: ${e.message}`);
                         }
                     }
                 } catch (e) {
@@ -437,7 +437,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._activeTimers.delete(this._radioWatcherId);
                     console.log('[Herkul] Radyo durduruldu');
                 } catch (e) {
-                    console.log(`[Herkul] Zamanlayıcı kaldırma bilgisi: ${e.message}`);
+                    console.error(`[Herkul] Zamanlayıcı kaldırma bilgisi: ${e.message}`);
                 }
                 this._radioWatcherId = null;
             }
@@ -450,7 +450,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                         this._busMessageId = null;
                     }
                 } catch (e) {
-                    console.log(`[Herkul] Bus kaldırma bilgisi: ${e.message}`);
+                    console.error(`[Herkul] Bus kaldırma bilgisi: ${e.message}`);
                 }
                 this._radioBusWatch = false;
             }
