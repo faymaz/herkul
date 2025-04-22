@@ -808,11 +808,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         if (this._activeTimers) {
             this._activeTimers.forEach(timerId => {
-                try {
-                    GLib.source_remove(timerId);
-                } catch (error) {
-                    console.error(`[Herkul] Zamanlayıcı kaldırılırken hata oluştu ${timerId}: ${error}`);
-                }
+                GLib.source_remove(timerId);
             });
             this._activeTimers.clear();
         }
@@ -820,11 +816,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     _cleanupUI() {
         ['_label', '_icon', '_fetchingIndicator', '_weatherIcon', '_tempLabel', '_cityLabel'].forEach(widgetName => {
             if (this[widgetName] && !this[widgetName].is_finalized?.()) {
-                try {
-                    this[widgetName].destroy();
-                } catch (error) {
-                    console.error(`[Herkul] Hata yok etme ${widgetName}:`, error);
-                }
+                this[widgetName].destroy();
                 this[widgetName] = null;
             }
         });
