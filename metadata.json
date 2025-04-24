@@ -7,7 +7,7 @@
   "icon": "icons/herkul.png",
   "name": "Herkul",
   "settings-schema": "org.gnome.shell.extensions.herkul",
-  "version": 9,
+  "version": 10,
   "shell-version": [
     "45",
     "46",

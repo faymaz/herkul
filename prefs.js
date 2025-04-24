@@ -167,7 +167,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
                 citiesGroup.add(defaultCityRow);
             }
         } catch (error) {
-            console.error('[PrayerTimes] Error loading city list:', error);
+            console.error('[Herkul] Error loading city list:', error);
             const errorLabel = new Gtk.Label({
                 label: _('Error loading city list'),
                 css_classes: ['error']
