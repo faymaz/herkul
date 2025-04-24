@@ -127,6 +127,51 @@ msgstr ""
 msgid "Stop Radio"
 msgstr ""
 
+msgid "Weather for"
+msgstr ""
+
+msgid "Feels like"
+msgstr ""
+
+msgid "Humidity"
+msgstr ""
+
+msgid "Wind"
+msgstr ""
+
+msgid "Pressure"
+msgstr ""
+
+msgid "Visibility"
+msgstr ""
+
+msgid "Weather Details"
+msgstr ""
+
+msgid "N"
+msgstr ""
+
+msgid "NE"
+msgstr ""
+
+msgid "E"
+msgstr ""
+
+msgid "SE"
+msgstr ""
+
+msgid "S"
+msgstr ""
+
+msgid "SW"
+msgstr ""
+
+msgid "W"
+msgstr ""
+
+msgid "NW"
+msgstr ""
+
 #~ msgid "Failed to load prayer times"
 #~ msgstr ""
 

@@ -115,6 +115,51 @@ msgstr "API-Schlüssel"
 msgid "Now Playing"
 msgstr "Jetzt läuft"
 
+msgid "Weather for"
+msgstr "Wetter für"
+
+msgid "Feels like"
+msgstr "Gefühlt wie"
+
+msgid "Humidity"
+msgstr "Luftfeuchtigkeit"
+
+msgid "Wind"
+msgstr "Wind"
+
+msgid "Pressure"
+msgstr "Luftdruck"
+
+msgid "Visibility"
+msgstr "Sichtweite"
+
+msgid "Weather Details"
+msgstr "Wetterdetails"
+
+msgid "N"
+msgstr "N"
+
+msgid "NE"
+msgstr "NO"
+
+msgid "E"
+msgstr "O"
+
+msgid "SE"
+msgstr "SO"
+
+msgid "S"
+msgstr "S"
+
+msgid "SW"
+msgstr "SW"
+
+msgid "W"
+msgstr "W"
+
+msgid "NW"
+msgstr "NW"
+
 #~ msgid "Failed to load prayer times"
 #~ msgstr "Gebetszeiten konnten nicht geladen werden"
 

@@ -106,3 +106,48 @@ msgstr "الموسيقى فقط"
 
 msgid "Stop Radio"
 msgstr "إيقاف الراديو"
+
+msgid "Weather for"
+msgstr "الطقس في"
+
+msgid "Feels like"
+msgstr "يشعر وكأنه"
+
+msgid "Humidity"
+msgstr "الرطوبة"
+
+msgid "Wind"
+msgstr "الرياح"
+
+msgid "Pressure"
+msgstr "الضغط الجوي"
+
+msgid "Visibility"
+msgstr "الرؤية"
+
+msgid "Weather Details"
+msgstr "تفاصيل الطقس"
+
+msgid "N"
+msgstr "ش"
+
+msgid "NE"
+msgstr "ش ش"
+
+msgid "E"
+msgstr "ش"
+
+msgid "SE"
+msgstr "ج ش"
+
+msgid "S"
+msgstr "ج"
+
+msgid "SW"
+msgstr "ج غ"
+
+msgid "W"
+msgstr "غ"
+
+msgid "NW"
+msgstr "ش غ"

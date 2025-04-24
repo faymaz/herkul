@@ -646,21 +646,55 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         });
         this.menu.addMenuItem(settingsButton);
     }
+    // async _fetchWeatherData() {
+    //     const apiKey = this._settings.get_string('apikey');
+    //     if (!apiKey) return;
+    //     const cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
+    //     if (!cityData?.weatherId) return;
+    //     try {
+    //         const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric`;
+    //         let message = Soup.Message.new('GET', url);
+    //         let bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+    //         if (message.status_code === 200) {
+    //             const data = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+    //             this._updateWeatherDisplay(data);
+    //         }
+    //     } catch (error) {
+    //         console.error('[Herkul] Weather error:', error);
+    //     }
+    // }
     async _fetchWeatherData() {
         const apiKey = this._settings.get_string('apikey');
         if (!apiKey) return;
+        
         const cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
         if (!cityData?.weatherId) return;
+        
         try {
-            const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric`;
+            this._showLoading();
+            const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric&lang=${this._settings.get_string('language')}`;
+            
             let message = Soup.Message.new('GET', url);
             let bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+            
             if (message.status_code === 200) {
                 const data = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+                this._weatherData = data; // Tüm veriyi sakla
                 this._updateWeatherDisplay(data);
+                
+                // Menüyü şimdi değil, menü açıldığında güncelle
+                this.menu.connect('open-state-changed', (menu, isOpen) => {
+                    if (isOpen) {
+                        this._updateWeatherMenu();
+                    }
+                });
+            } else {
+                console.error(`[Herkul] Weather API error: ${message.status_code}`);
             }
+            this._hideLoading();
         } catch (error) {
-            console.error('[Herkul] Weather error:', error);
+            console.error('[Herkul] Weather fetch error:', error);
+            this._hideLoading();
         }
     }
     _updateWeatherDisplay(data) {
@@ -679,22 +713,130 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             console.error('[Herkul] Display update error:', error);
         }
     }
+    // _updateWeatherMenu() {
+    //     if (!this._weatherData?.weather?.[0]) return;
+    //     const weather = this._weatherData.weather[0];
+    //     const temp = Math.round(this._weatherData.main.temp);
+    //     const feelsLike = Math.round(this._weatherData.main.feels_like);
+    //     const humidity = this._weatherData.main.humidity;
+    //     const windSpeed = this._weatherData.wind.speed;
+    //     const weatherItem = new PopupMenu.PopupMenuItem(`${weather.description}`);
+    //     const tempItem = new PopupMenu.PopupMenuItem(`Temperature: ${temp}°C (Feels like: ${feelsLike}°C)`);
+    //     const humidityItem = new PopupMenu.PopupMenuItem(`Humidity: ${humidity}%`);
+    //     const windItem = new PopupMenu.PopupMenuItem(`Wind: ${windSpeed} m/s`);
+    //     this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+    //     this.menu.addMenuItem(weatherItem);
+    //     this.menu.addMenuItem(tempItem);
+    //     this.menu.addMenuItem(humidityItem);
+    //     this.menu.addMenuItem(windItem);
+    // }
     _updateWeatherMenu() {
-        if (!this._weatherData?.weather?.[0]) return;
+        // Mevcut hava durumu menü öğelerini temizle
+        let weatherItems = this.menu._getMenuItems().filter(item => 
+            item._weatherItem === true);
+        
+        weatherItems.forEach(item => item.destroy());
+        
+        // Eğer hava durumu verisi yoksa, çık
+        if (!this._weatherData || !this._weatherData.weather || !this._weatherData.weather[0]) {
+            return;
+        }
+        
+        // Hava durumu verilerini al
         const weather = this._weatherData.weather[0];
         const temp = Math.round(this._weatherData.main.temp);
         const feelsLike = Math.round(this._weatherData.main.feels_like);
         const humidity = this._weatherData.main.humidity;
         const windSpeed = this._weatherData.wind.speed;
-        const weatherItem = new PopupMenu.PopupMenuItem(`${weather.description}`);
-        const tempItem = new PopupMenu.PopupMenuItem(`Temperature: ${temp}°C (Feels like: ${feelsLike}°C)`);
-        const humidityItem = new PopupMenu.PopupMenuItem(`Humidity: ${humidity}%`);
-        const windItem = new PopupMenu.PopupMenuItem(`Wind: ${windSpeed} m/s`);
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this.menu.addMenuItem(weatherItem);
+        const windDeg = this._weatherData.wind.deg;
+        let windDirection = "";
+        
+        // Rüzgar yönünü hesapla
+        if (windDeg !== undefined) {
+            const directions = [_("N"), _("NE"), _("E"), _("SE"), _("S"), _("SW"), _("W"), _("NW")];
+            const index = Math.round(((windDeg % 360) / 45)) % 8;
+            windDirection = directions[index];
+        }
+        
+        // Basınç bilgisi
+        const pressure = this._weatherData.main.pressure;
+        
+        // Görüş mesafesi (eğer varsa)
+        const visibility = this._weatherData.visibility ? 
+            Math.round(this._weatherData.visibility / 1000) : null;
+        
+        // Menü başlığı
+        const weatherHeader = new PopupMenu.PopupMenuItem(
+            `${_("Weather for")} ${this._selectedCity}`, 
+            { reactive: false }
+        );
+        weatherHeader._weatherItem = true;
+        
+        // Hava durumu açıklaması ve sıcaklık
+        const weatherDesc = new PopupMenu.PopupMenuItem(
+            `${_(weather.description)} (${temp}°C)`, 
+            { reactive: false }
+        );
+        weatherDesc._weatherItem = true;
+        
+        // Hissedilen sıcaklık
+        const tempItem = new PopupMenu.PopupMenuItem(
+            `${_("Feels like")}: ${feelsLike}°C`, 
+            { reactive: false }
+        );
+        tempItem._weatherItem = true;
+        
+        // Nem
+        const humidityItem = new PopupMenu.PopupMenuItem(
+            `${_("Humidity")}: ${humidity}%`, 
+            { reactive: false }
+        );
+        humidityItem._weatherItem = true;
+        
+        // Rüzgar hızı ve yönü
+        const windItem = new PopupMenu.PopupMenuItem(
+            `${_("Wind")}: ${windSpeed} m/s ${windDirection ? "(" + windDirection + ")" : ""}`, 
+            { reactive: false }
+        );
+        windItem._weatherItem = true;
+        
+        // Basınç
+        const pressureItem = new PopupMenu.PopupMenuItem(
+            `${_("Pressure")}: ${pressure} hPa`, 
+            { reactive: false }
+        );
+        pressureItem._weatherItem = true;
+        
+        // Görüş mesafesi (eğer varsa)
+        let visibilityItem = null;
+        if (visibility !== null) {
+            visibilityItem = new PopupMenu.PopupMenuItem(
+                `${_("Visibility")}: ${visibility} km`, 
+                { reactive: false }
+            );
+            visibilityItem._weatherItem = true;
+        }
+        
+        // Menüye öğeleri ekle
+        const weatherSeparator = new PopupMenu.PopupSeparatorMenuItem();
+        weatherSeparator._weatherItem = true;
+        
+        const weatherHeader2 = new PopupMenu.PopupSeparatorMenuItem(_("Weather Details"));
+        weatherHeader2._weatherItem = true;
+        
+        // Menü öğelerini ekle
+        this.menu.addMenuItem(weatherSeparator);
+        this.menu.addMenuItem(weatherHeader);
+        this.menu.addMenuItem(weatherDesc);
+        this.menu.addMenuItem(weatherHeader2);
         this.menu.addMenuItem(tempItem);
         this.menu.addMenuItem(humidityItem);
         this.menu.addMenuItem(windItem);
+        this.menu.addMenuItem(pressureItem);
+        
+        if (visibilityItem !== null) {
+            this.menu.addMenuItem(visibilityItem);
+        }
     }
     async _fetchPrayerTimes() {
         if (!this._citiesData) {

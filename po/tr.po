@@ -127,6 +127,51 @@ msgstr "Sadece Müzik"
 msgid "Stop Radio"
 msgstr "Radyoyu Durdur"
 
+msgid "Weather for"
+msgstr "Hava durumu"
+
+msgid "Feels like"
+msgstr "Hissedilen"
+
+msgid "Humidity"
+msgstr "Nem"
+
+msgid "Wind"
+msgstr "Rüzgar"
+
+msgid "Pressure"
+msgstr "Basınç"
+
+msgid "Visibility"
+msgstr "Görüş Mesafesi"
+
+msgid "Weather Details"
+msgstr "Hava Durumu Detayları"
+
+msgid "N"
+msgstr "K"
+
+msgid "NE"
+msgstr "KD"
+
+msgid "E"
+msgstr "D"
+
+msgid "SE"
+msgstr "GD"
+
+msgid "S"
+msgstr "G"
+
+msgid "SW"
+msgstr "GB"
+
+msgid "W"
+msgstr "B"
+
+msgid "NW"
+msgstr "KB"
+
 #~ msgid "Error"
 #~ msgstr "Hata"
 
