@@ -898,6 +898,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._radioPlayer = null;
         }
         this._cleanupTimers();
+        this._clearTimers();
         if (this._httpSession) {
             this._httpSession.abort();
             this._httpSession = null;
