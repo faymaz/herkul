@@ -3,28 +3,33 @@
   <schema id="org.gnome.shell.extensions.herkul" path="/org/gnome/shell/extensions/herkul/">
     <key name="default-city" type="s">
       <default>'Istanbul'</default>
-      <summary>Default city for prayer times</summary>
-      <description>The city to show prayer times for</description>
+      <summary>Namaz vakitleri için varsayılan şehir</summary>
+      <description>Namaz vakitleri için gösterileceği şehir</description>
     </key>
     <key name="notify-enabled" type="b">
       <default>true</default>
-      <summary>Enable notifications</summary>
-      <description>Show notifications before prayer times</description>
+      <summary>Bildirimleri Etkinleştir</summary>
+      <description>Namaz vakitlerinden önce bildirim göster</description>
     </key>
     <key name="sound-enabled" type="b">
       <default>true</default>
-      <summary>Enable sound</summary>
-      <description>Play sound with notifications</description>
+      <summary>Sesi Etkinleştir</summary>
+      <description>Bildirimlerle birlikte ses çal</description>
     </key>
     <key name="language" type="s">
       <default>'tr'</default>
-      <summary>Interface language</summary>
-      <description>Language for the interface (ar, de, en, tr)</description>
+      <summary>Arayüz dili</summary>
+      <description>Sadece Türkçe desteklenmektedir</description>
     </key>
     <key name="apikey" type="s">
       <default>''</default>
-      <summary>OpenWeatherMap API Key</summary>
-      <description>API Key for accessing OpenWeatherMap service</description>
+      <summary>OpenWeatherMap API Anahtarı</summary>
+      <description>OpenWeatherMap servisine erişim için API Anahtarı</description>
+    </key>
+    <key name="current-station" type="s">
+      <default>'herkul'</default>
+      <summary>Mevcut Radyo İstasyonu</summary>
+      <description>Son seçilen radyo istasyonu kimliği</description>
     </key>
   </schema>
 </schemalist>
