@@ -33,8 +33,8 @@ export default class HerkulPreferences extends ExtensionPreferences {
         
         // Radyo istasyonları listesi - extension.js ile aynı olmalı
         const radioStations = [
-            { id: 'herkul', name: _("Herkul Radio") },
-            { id: 'cihan', name: _("Cihan Radio") },
+            { id: 'herkul', name: _("Herkul Radyo") },
+            { id: 'cihan', name: _("Cihan Radyo") },
             { id: 'sadecemuzik', name: _("Sadece Müzik") }
         ];
         

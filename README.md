@@ -26,7 +26,6 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 - 🎵 Entegre Herkul Radyo yayını (https://herkul.org/)
 - 🎨 GNOME Shell temasıyla uyumlu görünüm
 - 🔄 Otomatik güncellenen vakitler
-- 🌐 Çoklu dil desteği (Türkçe, İngilizce, Almanca)
 - ⚙️ Özelleştirilebilir ayarlar
 
 ## Gereksinimler

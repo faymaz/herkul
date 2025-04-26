@@ -7,7 +7,6 @@
   "icon": "icons/herkul.png",
   "name": "Herkul",
   "settings-schema": "org.gnome.shell.extensions.herkul",
-  "version": 9,
   "shell-version": [
     "45",
     "46",
@@ -15,5 +14,6 @@
     "48"
   ],
   "url": "https://github.com/faymaz/herkul",
-  "uuid": "herkul@faymaz.github.com"
+  "uuid": "herkul@faymaz.github.com",
+  "version": 12
 }

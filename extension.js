@@ -88,7 +88,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._radioStations = [
             {
                 id: 'herkul',
-                name: _("Herkul Radio"),
+                name: _("Herkul Radyo"),
                 icon: 'herkul.png',
                 urls: [
                     'https://play.radioking.io/herkulradyo',
@@ -98,7 +98,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             },
             {
                 id: 'cihan',
-                name: _("Cihan Radio"),
+                name: _("Cihan Radyo"),
                 icon: 'cihan.png',
                 urls: [
                     'https://listen.radioking.com/radio/301204/stream/347869'
@@ -982,6 +982,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this._radioPlayer = null;
         }
         this._cleanupTimers();
+        this._clearTimers();
         if (this._httpSession) {
             this._httpSession.abort();
             this._httpSession = null;
