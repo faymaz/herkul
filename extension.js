@@ -864,7 +864,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             totalMinutes: totalMinutes,
             totalSeconds: diff.totalSeconds,
             // Türkçe format: "1sa 12dk 30sn"
-            formatted: `${diff.hours}sa ${diff.minutes}dk ${diff.seconds}sn`,
+            //formatted: `${diff.hours}sa ${diff.minutes}dk ${diff.seconds}sn`,
+            formatted: `${diff.hours}sa ${diff.minutes}dk ,
             // İngilizce format: "1h 12m 30s"
             formattedEn: `${diff.hours}h ${diff.minutes}m ${diff.seconds}s`
         };
