@@ -25,16 +25,27 @@ const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => 
     let [targetHour, targetMinute] = targetTime.split(':').map(Number);
     let currentHour = currentTime.get_hour();
     let currentMinute = currentTime.get_minute();
-    let targetMinutes = targetHour * 60 + targetMinute;
-    let currentMinutes = currentHour * 60 + currentMinute;
+    let currentSecond = currentTime.get_second();
+    let targetSeconds = (targetHour * 60 + targetMinute) * 60;
+    let currentSeconds = (currentHour * 60 + currentMinute) * 60 + currentSecond;
+    
     if (isNextDay) {
-        targetMinutes += 24 * 60;
+        targetSeconds += 24 * 60 * 60;
     }
 
-    let diffMinutes = targetMinutes - currentMinutes;
+    let diffSeconds = targetSeconds - currentSeconds;
+    
+    let hours = Math.floor(diffSeconds / 3600);
+    let remainingSeconds = diffSeconds % 3600;
+    let minutes = Math.floor(remainingSeconds / 60);
+    let seconds = remainingSeconds % 60;
+    
     return {
-        hours: Math.floor(diffMinutes / 60),
-        minutes: diffMinutes % 60
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds,
+        totalMinutes: Math.floor(diffSeconds / 60),
+        totalSeconds: diffSeconds
     };
 };
 
@@ -777,7 +788,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 
     _updateDisplay() {
         if (this._isDestroyed) return;
-
+    
         if (this._cityLabel && !this._cityLabel.is_finalized?.()) {
             this._cityLabel.text = this._selectedCity;
         }
@@ -787,7 +798,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             const timeInfo = this._calculateTimeLeft(nextPrayer.time, nextPrayer.isNextDay);
             
             if (this._label && !this._label.is_finalized?.()) {
-                this._label.text = `${nextPrayer.name}: ${timeInfo.hours}h ${timeInfo.minutes}m`;
+                this._label.text = `${nextPrayer.name}: ${timeInfo.formatted}`;
                 
                 if (timeInfo.totalMinutes >= 15 && timeInfo.totalMinutes <= 20) {
                     this._showNotification(nextPrayer.name, timeInfo.totalMinutes);
@@ -844,12 +855,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     _calculateTimeLeft(prayerTime, isNextDay = false) {
         let currentTime = GLib.DateTime.new_now_local();
         let diff = calculateTimeDifference(currentTime, prayerTime, isNextDay);
-        let totalMinutes = diff.hours * 60 + diff.minutes;
+        let totalMinutes = diff.totalMinutes;
+        
         return {
             hours: diff.hours,
             minutes: diff.minutes,
+            seconds: diff.seconds,
             totalMinutes: totalMinutes,
-            formatted: `${diff.hours}h ${diff.minutes}m`
+            totalSeconds: diff.totalSeconds,
+            // Türkçe format: "1sa 12dk 30sn"
+            formatted: `${diff.hours}sa ${diff.minutes}dk ${diff.seconds}sn`,
+            // İngilizce format: "1h 12m 30s"
+            formattedEn: `${diff.hours}h ${diff.minutes}m ${diff.seconds}s`
         };
     }
     _showNotification(prayerName, minutesLeft) {
