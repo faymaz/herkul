@@ -112,6 +112,22 @@ export default class HerkulPreferences extends ExtensionPreferences {
         });
         soundSwitch.add_suffix(soundToggle);
         notifyGroup.add(soundSwitch);
+
+        // Debug switch
+        const debugSwitch = new Adw.ActionRow({
+            title: _('Debug Modunu Etkinleştir'),
+            subtitle: _('Debug loglarını journalctl çıktısında göster (geliştiriciler için)')
+        });
+        const debugToggle = new Gtk.Switch({
+            active: settings.get_boolean('debug-enabled'),
+            valign: Gtk.Align.CENTER,
+        });
+        debugToggle.connect('notify::active', (widget) => {
+            settings.set_boolean('debug-enabled', widget.get_active());
+        });
+        debugSwitch.add_suffix(debugToggle);
+        notifyGroup.add(debugSwitch);
+
         return notifyGroup;
     }
     

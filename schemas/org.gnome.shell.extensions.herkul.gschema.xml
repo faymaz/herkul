@@ -31,5 +31,10 @@
       <summary>Mevcut Radyo İstasyonu</summary>
       <description>Son seçilen radyo istasyonu kimliği</description>
     </key>
+    <key name="debug-enabled" type="b">
+      <default>false</default>
+      <summary>Debug Modunu Etkinleştir</summary>
+      <description>Debug loglarını journalctl çıktısında göster</description>
+    </key>
   </schema>
 </schemalist>
