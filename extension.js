@@ -79,7 +79,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._extension = extension;
         this._settings = extension.getSettings();
 
-        // Debug logging helper
+       
         this._debug = (message) => {
             if (this._settings.get_boolean('debug-enabled')) {
                 console.log(`[Herkul] ${message}`);
@@ -95,7 +95,19 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._prayerTimes = {};
         this._calendarInfo = { hijri: null, gregorian: null };
         this._citiesData = loadCitiesData(this._extension.path);
-        this._selectedCity = this._settings.get_string('default-city') || this._citiesData?.cities[0]?.name || "Istanbul";
+
+       
+        let defaultCity = this._settings.get_string('default-city');
+        if (!defaultCity && this._citiesData && this._citiesData.cities) {
+           
+            for (const countryData of this._citiesData.cities) {
+                if (countryData.cities && Array.isArray(countryData.cities) && countryData.cities.length > 0) {
+                    defaultCity = countryData.cities[0].name;
+                    break;
+                }
+            }
+        }
+        this._selectedCity = defaultCity || "Istanbul";
         this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
         this._soundEnabled = this._settings.get_boolean('sound-enabled');
         this._lastNotificationTime = null;
@@ -114,8 +126,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 icon: 'herkul.png',
                 urls: [
                     'https://play.radioking.io/herkulradyo',
-                    'https://listen.radioking.com/radio/721190/stream/787034',
-                    'https://s1.wohooo.net/proxy/herkulfo/stream'
+                    'https://listen.radioking.com/radio/721190/stream/787034'
                 ]
             },
             {
@@ -204,6 +215,37 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._startUpdating();
     }
 
+   
+    _findCityByName(cityName) {
+        if (!this._citiesData || !this._citiesData.cities) {
+            return null;
+        }
+
+        for (const countryData of this._citiesData.cities) {
+            if (countryData.cities && Array.isArray(countryData.cities)) {
+                const city = countryData.cities.find(c => c.name === cityName);
+                if (city) {
+                    return city;
+                }
+            }
+        }
+        return null;
+    }
+
+   
+    _getFirstCity() {
+        if (!this._citiesData || !this._citiesData.cities) {
+            return "Istanbul";
+        }
+
+        for (const countryData of this._citiesData.cities) {
+            if (countryData.cities && Array.isArray(countryData.cities) && countryData.cities.length > 0) {
+                return countryData.cities[0].name;
+            }
+        }
+        return "Istanbul";
+    }
+
     _startRadio() {
         try {
             if (this._radioPlayer) {
@@ -222,13 +264,13 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 throw new Error('GStreamer playbin oluşturulamadı');
             }
             
-            // Mevcut istasyon bilgisini al
+           
             const currentStation = this._radioStations[this._currentStationIndex];
             if (!currentStation) {
                 throw new Error('Radyo istasyonu bulunamadı');
             }
             
-            // URL'yi ayarla - önce mevcut URL indeksi, hata alınırsa sıradaki URL'yi dene
+           
             const url = currentStation.urls[this._currentUrlIndex] || currentStation.urls[0];
             
             this._radioPlayer.set_property('uri', url);
@@ -263,17 +305,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         const currentStation = this._radioStations[this._currentStationIndex];
         if (!currentStation) return;
         
-        // Bir sonraki URL'ye geç
+       
         this._currentUrlIndex = (this._currentUrlIndex + 1) % currentStation.urls.length;
         
-        // Eğer orijinal URL'ye geri döndüysek, radyoyu durdur
+       
         if (this._currentUrlIndex === 0) {
             this._debug('Tüm URL\'ler başarısız oldu');
             this._radioPlaying = false;
             return;
         }
 
-        // Yeni URL ile tekrar başlat
+       
         this._debug(`Yeni URL deneniyor: ${this._currentUrlIndex}`);
         const retryTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
             if (this._radioPlaying) {
@@ -482,31 +524,31 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
     }
 
-    // _initHttpSession() {
-    //     try {
-    //         this._httpSession = new Soup.Session({
-    //             timeout: 60,
-    //             user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
-    //         });
-    //         this._retryCount = 0;
-    //     } catch (error) {
-    //         console.error(`[Herkul] HTTP oturumu başlatılırken hata oluştu: ${error}`);
-    //         if (this._retryCount < this._maxRetries) {
-    //             this._retryCount++;
-    //             const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
-    //                 this._initHttpSession();
-    //                 return GLib.SOURCE_REMOVE;
-    //             });
-    //             this._activeTimers.add(timerId);
-    //         }
-    //     }
-    // }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
     _initHttpSession() {
     this._httpSession = new Soup.Session({
         timeout: 30,
         user_agent: 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/119.0'
     });
-    // Proxy support is automatic in libsoup3 via system settings
+   
 }
 
     _showLoading() {
@@ -612,7 +654,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             return;
         }
 
-        // Takvim bilgilerini göster
+       
         if (this._calendarInfo) {
             if (this._calendarInfo.gregorian) {
                 let gregorianItem = new PopupMenu.PopupMenuItem(this._calendarInfo.gregorian, {
@@ -635,7 +677,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
         }
 
-        // Namaz vakitlerini göster
+       
         let prayerNames = getPrayerMap();
         if (this._prayerTimes && Object.keys(this._prayerTimes).length > 0) {
             Object.entries(this._prayerTimes).forEach(([name, time]) => {
@@ -647,7 +689,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }
         
-        // Radyo menüsü
+       
         let radioMenu = new PopupMenu.PopupSubMenuMenuItem(_('Radyo İstasyonları'));
         this._radioStations.forEach(station => {
             let stationIcon = new St.Icon({
@@ -659,7 +701,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             let stationItem = new PopupMenu.PopupMenuItem(station.name);
             stationItem.insert_child_at_index(stationIcon, 1);
             
-            // Seçili istasyonu işaretle
+           
             if (station.id === this._currentStation) {
                 stationItem.setOrnament(PopupMenu.Ornament.DOT);
             }
@@ -673,7 +715,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         this.menu.addMenuItem(radioMenu);
         
-        // Radyo açma/kapama düğmesi
+       
         let radioToggle = new PopupMenu.PopupSwitchMenuItem(_('Radyo Çal/Durdur'), this._radioPlaying);
         
         let currentStation = this._radioStations[this._currentStationIndex];
@@ -693,20 +735,30 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         
         let cityItem = new PopupMenu.PopupSubMenuMenuItem(_("Şehir Seçin"));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-    
-        this._citiesData.cities.forEach(city => {
-            let item = new PopupMenu.PopupMenuItem(city.name);
-            if (city.name === this._selectedCity) {
-                item.setOrnament(PopupMenu.Ornament.DOT);
-            }
-            item.connect('activate', () => {
-                this._selectedCity = city.name;
-                this._settings.set_string('default-city', city.name);
-                this._fetchPrayerTimes();
-                this._rebuildMenu();
+
+       
+        if (this._citiesData && this._citiesData.cities) {
+           
+            this._citiesData.cities.forEach(countryData => {
+                if (countryData.cities && Array.isArray(countryData.cities)) {
+                    countryData.cities.forEach(city => {
+                        if (city.name) {
+                            let item = new PopupMenu.PopupMenuItem(city.name);
+                            if (city.name === this._selectedCity) {
+                                item.setOrnament(PopupMenu.Ornament.DOT);
+                            }
+                            item.connect('activate', () => {
+                                this._selectedCity = city.name;
+                                this._settings.set_string('default-city', city.name);
+                                this._fetchPrayerTimes();
+                                this._rebuildMenu();
+                            });
+                            cityItem.menu.addMenuItem(item);
+                        }
+                    });
+                }
             });
-            cityItem.menu.addMenuItem(item);
-        });
+        }
         this.menu.addMenuItem(cityItem);        
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         const settingsButton = new PopupMenu.PopupMenuItem(_('Ayarlar'));
@@ -721,7 +773,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
     async _fetchWeatherData() {
         const apiKey = this._settings.get_string('apikey');
         if (!apiKey) return;
-        const cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
+        const cityData = this._findCityByName(this._selectedCity);
         if (!cityData?.weatherId) return;
         try {
             const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric`;
@@ -768,189 +820,189 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(humidityItem);
         this.menu.addMenuItem(windItem);
     }
-    // async _fetchPrayerTimes() {
-    //     if (!this._citiesData) {
-    //         console.debug('[Herkul] Şehir verisi mevcut değil');
-    //         return;
-    //     }
-    //     let cityData = this._citiesData.cities.find(city => city.name === this._selectedCity);
-    //     if (!cityData) {
-    //         console.warn(`[Herkul] Şehir bulunamadı: ${this._selectedCity}`);
-    //         return;
-    //     }
-    //     this._showLoading();
-    //     try {
-    //         if (!this._httpSession) {
-    //             console.debug('[Herkul] HTTP oturumu başlatılmadı, yeniden deneniyor...');
-    //             this._initHttpSession();
-    //             return;
-    //         }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //         // Retry loop for transient network errors
-    //         let bytes = null;
-    //         let message = null;
-    //         let lastError = null;
-    //         for (let attempt = 0; attempt <= this._maxRetries; attempt++) {
-    //             try {
-    //                 // use Soup.Message.new (aynı yöntem hava durumunda çalışıyor)
-    //                 message = Soup.Message.new('GET', cityData.url);
-    //                 // daha sağlam başlıklar
-    //                 message.request_headers.append('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) Herkul/1.0');
-    //                 message.request_headers.append('Accept', 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8');
-    //                 message.request_headers.append('Accept-Language', 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7');
-    //                 message.request_headers.append('Cache-Control', 'no-cache');
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //                 bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+   
 
-    //                 // If we get here no exception -> break retry loop
-    //                 lastError = null;
-    //                 break;
-    //             } catch (e) {
-    //                 lastError = e;
-    //                 console.warn(`[Herkul] İstek hatası (deneme ${attempt}): ${e}`);
-    //                 if (attempt < this._maxRetries) {
-    //                     // wait a bit before retrying
-    //                     let waitSeconds = Math.pow(2, attempt); // 1,2,4...
-    //                     await new Promise(resolve => {
-    //                         GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, waitSeconds, () => {
-    //                             resolve();
-    //                             return GLib.SOURCE_REMOVE;
-    //                         });
-    //                     });
-    //                     continue;
-    //                 } else {
-    //                     throw e;
-    //                 }
-    //             }
-    //         }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //         if (!bytes || !message) {
-    //             throw new Error('İstekten geçerli yanıt alınamadı');
-    //         }
+   
+   
+   
 
-    //         if (message.status_code !== 200) {
-    //             throw new Error(`HTTP error: ${message.status_code}`);
-    //         }
+   
+   
+   
 
-    //         let text = new TextDecoder().decode(bytes.get_data());
+   
 
-    //         // Updated patterns array with new HTML structure matches
-    //         const patterns = [
-    //             /<td[^>]*class="[^"]*vakit[^"]*"[^>]*>([^<]+)<\/td>\s*<td[^>]*>(\d{1,2}:\d{2})<\/td>/g,
-    //             /<div[^>]*class="[^"]*namazvakti[^"]*"[^>]*>\s*<span[^>]*>([^<]+)<\/span>\s*<span[^>]*>(\d{1,2}:\d{2})<\/span>/g,
-    //             />([^<]+)<\/td>\s*<td[^>]*>(\d{1,2}:\d{2})<\/td>/g,
-    //             /<div[^>]*class="[^"]*prayer-times?[^"]*"[^>]*>\s*<span[^>]*>([^<]+)<\/span>\s*<span[^>]*>(\d{1,2}:\d{2})<\/span>/g,
-    //             /<div[^>]*class="[^"]*vakitler[^"]*"[^>]*>[\s\S]*?<span[^>]*>([^<]+)<\/span>[\s\S]*?<span[^>]*>(\d{1,2}:\d{2})<\/span>/g
-    //         ];
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //         let times = {};
-    //         let matched = false;
+   
+   
 
-    //         console.debug('[Herkul] Fetching prayer times for:', this._selectedCity);
-    //         console.debug('[Herkul] URL:', cityData.url);
+   
+   
 
-    //         for (let pattern of patterns) {
-    //             let match;
-    //             while ((match = pattern.exec(text)) !== null) {
-    //                 const [_, name, time] = match;
-    //                 const normalizedName = name.toLowerCase()
-    //                     .replace(/ğ/g, 'g')
-    //                     .replace(/ü/g, 'u')
-    //                     .replace(/ş/g, 's')
-    //                     .replace(/ı/g, 'i')
-    //                     .replace(/ö/g, 'o')
-    //                     .replace(/ç/g, 'c')
-    //                     .replace(/\s+/g, '')
-    //                     .trim();
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //                 const prayerMap = {
-    //                     'imsak': 'imsak',
-    //                     'gunes': 'gunes',
-    //                     'günes': 'gunes',
-    //                     'ogle': 'ogle',
-    //                     'ögle': 'ogle',
-    //                     'öğle': 'ogle',
-    //                     'ikindi': 'ikindi',
-    //                     'aksam': 'aksam',
-    //                     'aksham': 'aksam',
-    //                     'yatsi': 'yatsi',
-    //                     'yatsı': 'yatsi',
-    //                     'yatsı': 'yatsi'
-    //                 };
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //                 if (prayerMap[normalizedName]) {
-    //                     times[prayerMap[normalizedName]] = time;
-    //                     matched = true;
-    //                     console.debug(`[Herkul] Matched prayer time: ${name} (${normalizedName}) -> ${time}`);
-    //                 }
-    //             }
+   
+   
+   
+   
+   
+   
 
-    //             if (matched) {
-    //                 console.debug('[Herkul] Successfully matched pattern:', pattern.source);
-    //                 break;
-    //             }
-    //         }
+   
+   
+   
+   
+   
 
-    //         if (Object.keys(times).length === 0) {
-    //             // Log and save snippet for debugging
-    //             const snippet = text.substring(0, 2000);
-    //             console.debug('[Herkul] HTML content (snippet):', snippet);
-    //             try {
-    //                 GLib.file_set_contents('/tmp/herkul_prayer_debug.html', text);
-    //                 console.debug('[Herkul] Debug HTML yazıldı: /tmp/herkul_prayer_debug.html');
-    //             } catch (e) {
-    //                 console.warn('[Herkul] Debug HTML yazılamadı:', e);
-    //             }
-    //             throw new Error('Cevapta namaz vakitleri bulunamadı');
-    //         }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //         // Validate required prayer times
-    //         const requiredPrayers = ['imsak', 'gunes', 'ogle', 'ikindi', 'aksam', 'yatsi'];
-    //         const missingPrayers = requiredPrayers.filter(prayer => !times[prayer]);
+   
+   
+   
 
-    //         if (missingPrayers.length > 0) {
-    //             console.debug('[Herkul] Missing prayer times:', missingPrayers.join(', '));
-    //             throw new Error(`Eksik namaz vakitleri: ${missingPrayers.join(', ')}`);
-    //         }
+   
+   
+   
+   
 
-    //         this._prayerTimes = times;
-    //         console.debug('[Herkul] Successfully fetched prayer times:', times);
-    //         this._updateDisplay();
-    //         this._hideLoading();
+   
+   
+   
+   
 
-    //     } catch (error) {
-    //         console.error(`[Herkul] Namaz vakitleri alınırken hata oluştu: ${error}`);
-    //         this._hideLoading();
+   
+   
+   
 
-    //         // Retry on initialization / Xwayland-like issues
-    //         if (error.message && (error.message.includes('not initialized') || error.message.includes('Xwayland'))) {
-    //             if (this._retryCount < this._maxRetries) {
-    //                 this._retryCount++;
-    //                 const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
-    //                     this._fetchPrayerTimes();
-    //                     return GLib.SOURCE_REMOVE;
-    //                 });
-    //                 this._activeTimers.add(timerId);
-    //             }
-    //         }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //         // Network transient errors: also retry a couple times
-    //         if (error.message && (error.toString().toLowerCase().includes('connection reset') || error.toString().toLowerCase().includes('error receiving data'))) {
-    //             if (this._retryCount < this._maxRetries) {
-    //                 this._retryCount++;
-    //                 console.debug(`[Herkul] Ağ hatası, yeniden denenecek (count=${this._retryCount})`);
-    //                 const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2 * this._retryCount, () => {
-    //                     this._fetchPrayerTimes();
-    //                     return GLib.SOURCE_REMOVE;
-    //                 });
-    //                 this._activeTimers.add(timerId);
-    //                 return;
-    //             }
-    //         }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    //         this._label.text = 'Namaz vakitleri yüklenemedi';
-    //     }
-    // }
+   
+   
+   
 
     _fetchPrayerTimes(retryCount = 0) {
     if (retryCount >= 3) {
@@ -962,7 +1014,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 
     this._debug(`Namaz vakitleri fetch ediliyor... (deneme: ${retryCount})`);
 
-    const city = this._citiesData.cities.find(c => c.name === this._selectedCity);
+    const city = this._findCityByName(this._selectedCity);
     if (!city || !city.url) {
         console.error('[Herkul] Şehir URL\'si bulunamadı:', this._selectedCity);
         return;
@@ -976,7 +1028,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         return;
     }
 
-    // Başlık ekle (User-Agent zaten session'da ama garanti olsun)
+   
     message.request_headers.append('Accept', 'text/html,application/xhtml+xml');
     message.request_headers.append('Accept-Language', 'tr-TR,tr;q=0.9');
 
@@ -995,17 +1047,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             const html = new TextDecoder().decode(bytes.get_data());
             this._debug(`HTML decode edildi: ${html.length} karakter`);
 
-            // Namaz vakitlerini parse et
+           
             const times = this._parsePrayerTimes(html);
 
-            // Takvim bilgilerini parse et
+           
             const calendarInfo = this._parseCalendarInfo(html);
 
-            // Verileri sakla
+           
             this._prayerTimes = times;
             this._calendarInfo = calendarInfo;
 
-            // Loglama
+           
             if (calendarInfo.hijri) {
                 this._debug(`Hicri takvim: ${calendarInfo.hijri}`);
             }
@@ -1020,7 +1072,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         } catch (error) {
             console.error(`[Herkul] İstek hatası (deneme ${retryCount}):`, error.message);
 
-            // 2 saniye bekleyip tekrar dene
+           
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
                 this._fetchPrayerTimes(retryCount + 1);
                 return GLib.SOURCE_REMOVE;
@@ -1031,11 +1083,11 @@ class PrayerTimesIndicator extends PanelMenu.Button {
 _parsePrayerTimes(html) {
     const times = {};
 
-    // 1. Yöntem: data-vakit-name attribute'larını kullanarak parse et
+   
     const prayerKeys = ['imsak', 'gunes', 'ogle', 'ikindi', 'aksam', 'yatsi'];
 
     for (const key of prayerKeys) {
-        // data-vakit-name attribute'u ile vakti bul
+       
         const pattern = new RegExp(
             `<div[^>]*class="tpt-cell"[^>]*data-vakit-name="${key}"[^>]*>[\\s\\S]*?` +
             `<div[^>]*class="tpt-time"[^>]*>([^<]+)<\\/div>`,
@@ -1048,13 +1100,13 @@ _parsePrayerTimes(html) {
         }
     }
 
-    // Başarılı olduysa döndür
+   
     if (Object.keys(times).length === 6) {
         this._debug('Namaz vakitleri başarıyla alındı (data-vakit-name method)');
         return times;
     }
 
-    // 2. Yöntem: Sıralı tpt-time class'ları (fallback)
+   
     const regex = /<div class="tpt-time"[^>]*>([^<]+)<\/div>/gi;
     const matches = html.matchAll(regex);
     const timeValues = Array.from(matches).map(m => m[1].trim());
@@ -1067,7 +1119,7 @@ _parsePrayerTimes(html) {
         return times;
     }
 
-    // 3. Yöntem: JavaScript değişkenleri (son çare)
+   
     const jsVars = {
         imsak: html.match(/var _imsakTime = "([^"]+)";/),
         gunes: html.match(/var _gunesTime = "([^"]+)";/),
@@ -1097,13 +1149,13 @@ _parseCalendarInfo(html) {
         gregorian: null
     };
 
-    // Hicri takvim bilgisini al
+   
     const hijriMatch = html.match(/<div[^>]*class="ti-hicri"[^>]*>([^<]+)<\/div>/i);
     if (hijriMatch && hijriMatch[1]) {
         calendarInfo.hijri = hijriMatch[1].trim();
     }
 
-    // Miladi takvim bilgisini al
+   
     const gregorianMatch = html.match(/<div[^>]*class="ti-miladi"[^>]*>([^<]+)<\/div>/i);
     if (gregorianMatch && gregorianMatch[1]) {
         calendarInfo.gregorian = gregorianMatch[1].trim();
@@ -1189,10 +1241,10 @@ _parseCalendarInfo(html) {
             seconds: diff.seconds,
             totalMinutes: totalMinutes,
             totalSeconds: diff.totalSeconds,
-            // Türkçe format: "1sa 12dk 30sn"
-            //formatted: `${diff.hours}sa ${diff.minutes}dk ${diff.seconds}sn`,
+           
+           
             formatted: `${diff.hours}sa ${diff.minutes}dk`,
-            // İngilizce format: "1h 12m 30s"
+           
             formattedEn: `${diff.hours}h ${diff.minutes}m ${diff.seconds}s`
         };
     }

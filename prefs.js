@@ -31,7 +31,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
             description: _('Varsayılan radyo istasyonunu seçin')
         });
         
-        // Radyo istasyonları listesi - extension.js ile aynı olmalı
+       
         const radioStations = [
             { id: 'herkul', name: _("Herkul Radyo") },
             { id: 'cihan', name: _("Cihan Radyo") },
@@ -48,14 +48,14 @@ export default class HerkulPreferences extends ExtensionPreferences {
             })
         });
         
-        // Mevcut istasyonu seç
+       
         const currentStation = settings.get_string('current-station');
         const stationIndex = stationIds.indexOf(currentStation);
         if (stationIndex !== -1) {
             defaultStationRow.selected = stationIndex;
         }
         
-        // Değişiklikleri kaydet
+       
         defaultStationRow.connect('notify::selected', (widget) => {
             const selectedId = stationIds[widget.selected];
             settings.set_string('current-station', selectedId);
@@ -113,7 +113,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
         soundSwitch.add_suffix(soundToggle);
         notifyGroup.add(soundSwitch);
 
-        // Debug switch
+       
         const debugSwitch = new Adw.ActionRow({
             title: _('Debug Modunu Etkinleştir'),
             subtitle: _('Debug loglarını journalctl çıktısında göster (geliştiriciler için)')
