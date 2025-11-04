@@ -144,7 +144,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
             if (success) {
                 const citiesData = JSON.parse(new TextDecoder().decode(contents));
 
-                // Flatten the nested structure: collect all cities from all countries
+               
                 const allCities = [];
                 citiesData.cities.forEach(countryGroup => {
                     if (countryGroup.cities && Array.isArray(countryGroup.cities)) {
@@ -159,7 +159,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
                     }
                 });
 
-                // Create display names with country (e.g., "İstanbul (Türkiye)")
+               
                 const cityDisplayNames = allCities.map(city =>
                     `${city.name} (${city.country})`
                 );
@@ -173,7 +173,7 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
 
                 const currentCity = settings.get_string('default-city');
-                // Find index by matching just the city name (without country)
+               
                 const cityIndex = allCities.findIndex(city => city.name === currentCity);
                 if (cityIndex !== -1) {
                     defaultCityRow.selected = cityIndex;

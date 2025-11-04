@@ -30,7 +30,7 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 
 ## Gereksinimler
 
-- GNOME Shell 45, 46 veya 47
+- GNOME Shell 45, 46, 47, 48 veya 49
 - GStreamer (ses çalma özelliği için)
 - İnternet bağlantısı
 - [OpenWeatherMap](https://home.openweathermap.org) API anahtarı (hava durumu için) sayfasına üye olup [apikey](https://home.openweathermap.org/api_keys) alabilirsiniz.
