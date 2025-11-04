@@ -140,28 +140,48 @@ export default class HerkulPreferences extends ExtensionPreferences {
         try {
             const citiesPath = GLib.build_filenamev([this.path, 'cities.json']);
             const [success, contents] = GLib.file_get_contents(citiesPath);
-            
+
             if (success) {
                 const citiesData = JSON.parse(new TextDecoder().decode(contents));
-                const cityNames = citiesData.cities.map(city => city.name);
+
+                // Flatten the nested structure: collect all cities from all countries
+                const allCities = [];
+                citiesData.cities.forEach(countryGroup => {
+                    if (countryGroup.cities && Array.isArray(countryGroup.cities)) {
+                        countryGroup.cities.forEach(city => {
+                            allCities.push({
+                                name: city.name,
+                                country: countryGroup.country,
+                                url: city.url,
+                                weatherId: city.weatherId
+                            });
+                        });
+                    }
+                });
+
+                // Create display names with country (e.g., "İstanbul (Türkiye)")
+                const cityDisplayNames = allCities.map(city =>
+                    `${city.name} (${city.country})`
+                );
 
                 const defaultCityRow = new Adw.ComboRow({
                     title: _('Varsayılan Şehir'),
                     model: new Gtk.StringList({
-                        strings: cityNames
+                        strings: cityDisplayNames
                     })
                 });
 
-               
+
                 const currentCity = settings.get_string('default-city');
-                const cityIndex = cityNames.indexOf(currentCity);
+                // Find index by matching just the city name (without country)
+                const cityIndex = allCities.findIndex(city => city.name === currentCity);
                 if (cityIndex !== -1) {
                     defaultCityRow.selected = cityIndex;
                 }
 
-               
+
                 defaultCityRow.connect('notify::selected', (widget) => {
-                    const selectedCity = cityNames[widget.selected];
+                    const selectedCity = allCities[widget.selected].name;
                     settings.set_string('default-city', selectedCity);
                 });
 

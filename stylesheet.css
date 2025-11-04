@@ -30,6 +30,14 @@
     direction: rtl;
     text-align: right;
 }
+.calendar-info-hijri {
+    color: #000000;
+    text-align: middle;
+}
+.calendar-info-gregorian {
+    color: #000000;
+    text-align: middle;
+}
 
 /* Arapça dil seçildiğinde RTL desteği için */
 .prayer-times-rtl {
