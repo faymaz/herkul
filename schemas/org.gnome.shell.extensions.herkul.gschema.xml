@@ -36,5 +36,10 @@
       <summary>Debug Modunu Etkinleştir</summary>
       <description>Debug loglarını journalctl çıktısında göster</description>
     </key>
+    <key name="notification-sound" type="s">
+      <default>'call.mp3'</default>
+      <summary>Bildirim Ses Dosyası</summary>
+      <description>Bildirim için kullanılacak ses dosyası</description>
+    </key>
   </schema>
 </schemalist>

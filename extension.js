@@ -597,6 +597,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                     this._changeStation(stationId);
                 }
                 break;
+            case 'notification-sound':
+                this._debug(`Bildirim sesi değiştirildi: ${this._settings.get_string('notification-sound')}`);
+                break;
         }
     }
     _updateLabels() {
@@ -846,11 +849,16 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         } catch (error) {
             console.error(`[Herkul] İstek hatası (deneme ${retryCount}):`, error.message);
 
-           
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
-                this._fetchPrayerTimes(retryCount + 1);
+
+            const retryTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+                if (!this._isDestroyed) {
+                    this._fetchPrayerTimes(retryCount + 1);
+                }
                 return GLib.SOURCE_REMOVE;
             });
+            if (retryTimerId) {
+                this._activeTimers.add(retryTimerId);
+            }
         }
     });
 }
@@ -1045,7 +1053,8 @@ _parseCalendarInfo(html) {
         if (this._soundEnabled && !this._isPlayingSound) {
             try {
                 this._isPlayingSound = true;
-                const soundPath = GLib.build_filenamev([this._extension.path, 'sounds', 'call.mp3']);
+                const soundFileName = this._settings.get_string('notification-sound') || 'call.mp3';
+                const soundPath = GLib.build_filenamev([this._extension.path, 'sounds', soundFileName]);
                 const soundFile = Gio.File.new_for_path(soundPath);
                 if (soundFile.query_exists(null)) {
                     Gst.init(null);

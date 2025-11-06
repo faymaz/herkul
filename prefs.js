@@ -113,7 +113,39 @@ export default class HerkulPreferences extends ExtensionPreferences {
         soundSwitch.add_suffix(soundToggle);
         notifyGroup.add(soundSwitch);
 
-       
+
+        const soundFiles = [
+            { id: 'call.mp3', name: _("Davud Ses 1 (call.mp3)") },
+            { id: 'call_1.mp3', name: _("Ayine Ses 2 (call_1.mp3)") }
+        ];
+
+        const soundFileNames = soundFiles.map(sound => sound.name);
+        const soundFileIds = soundFiles.map(sound => sound.id);
+
+        const notificationSoundRow = new Adw.ComboRow({
+            title: _('Bildirim Sesi'),
+            subtitle: _('Bildirimler için kullanılacak ses dosyasını seçin'),
+            model: new Gtk.StringList({
+                strings: soundFileNames
+            })
+        });
+
+
+        const currentSound = settings.get_string('notification-sound');
+        const soundIndex = soundFileIds.indexOf(currentSound);
+        if (soundIndex !== -1) {
+            notificationSoundRow.selected = soundIndex;
+        }
+
+
+        notificationSoundRow.connect('notify::selected', (widget) => {
+            const selectedId = soundFileIds[widget.selected];
+            settings.set_string('notification-sound', selectedId);
+        });
+
+        notifyGroup.add(notificationSoundRow);
+
+
         const debugSwitch = new Adw.ActionRow({
             title: _('Debug Modunu Etkinleştir'),
             subtitle: _('Debug loglarını journalctl çıktısında göster (geliştiriciler için)')
