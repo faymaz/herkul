@@ -41,5 +41,10 @@
       <summary>Bildirim Ses Dosyası</summary>
       <description>Bildirim için kullanılacak ses dosyası</description>
     </key>
+    <key name="ezan-enabled" type="b">
+      <default>false</default>
+      <summary>Vakit girdiğini belirten sesli uyarı</summary>
+      <description>Namaz vakti girince sesli bildir</description>
+    </key>
   </schema>
 </schemalist>

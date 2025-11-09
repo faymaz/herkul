@@ -106,10 +106,14 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._selectedCity = defaultCity || "Istanbul";
         this._notificationsEnabled = this._settings.get_boolean('notify-enabled');
         this._soundEnabled = this._settings.get_boolean('sound-enabled');
+        this._ezanEnabled = this._settings.get_boolean('ezan-enabled');
         this._lastNotificationTime = null;
+        this._lastEzanPrayer = null;
         this._isBlinking = false;
         this._isPlayingSound = false;
+        this._isPlayingEzan = false;
         this._player = null;
+        this._ezanPlayer = null;
         this._retryCount = 0;
         this._maxRetries = 3;
         this._radioPlaying = false;
@@ -588,6 +592,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             case 'sound-enabled':
                 this._soundEnabled = this._settings.get_boolean('sound-enabled');
                 break;
+            case 'ezan-enabled':
+                this._ezanEnabled = this._settings.get_boolean('ezan-enabled');
+                break;
             case 'apikey':
                 this._fetchWeatherData();
                 break;
@@ -941,18 +948,21 @@ _parseCalendarInfo(html) {
 
     _updateDisplay() {
         if (this._isDestroyed) return;
-    
+
         if (this._cityLabel && !this._cityLabel.is_finalized?.()) {
             this._cityLabel.text = this._selectedCity;
         }
+
+        this._checkPrayerTimeEntry();
+
         const nextPrayer = this._findNextPrayer();
         if (!nextPrayer) return;
         try {
             const timeInfo = this._calculateTimeLeft(nextPrayer.time, nextPrayer.isNextDay);
-            
+
             if (this._label && !this._label.is_finalized?.()) {
                 this._label.text = `${nextPrayer.name}: ${timeInfo.formatted}`;
-                
+
                 if (timeInfo.totalMinutes >= 15 && timeInfo.totalMinutes <= 20) {
                     this._showNotification(nextPrayer.name, timeInfo.totalMinutes);
                 }
@@ -961,6 +971,32 @@ _parseCalendarInfo(html) {
             console.error('[Herkul] Ekran güncelleme hatası:', error);
             if (this._label && !this._label.is_finalized?.()) {
                 this._label.text = 'Error';
+            }
+        }
+    }
+
+    _checkPrayerTimeEntry() {
+        if (!this._ezanEnabled || !this._prayerTimes || Object.keys(this._prayerTimes).length === 0) {
+            return;
+        }
+
+        let currentTime = GLib.DateTime.new_now_local();
+        let currentHour = currentTime.get_hour();
+        let currentMinute = currentTime.get_minute();
+        let currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+
+        let prayerNames = getPrayerMap();
+
+        for (let [prayerKey, prayerTime] of Object.entries(this._prayerTimes)) {
+            if (prayerTime === currentTimeString) {
+                const prayerName = prayerNames[prayerKey];
+
+                if (this._lastEzanPrayer !== prayerTime) {
+                    this._debug(`Vakit girdi: ${prayerName} (${prayerTime})`);
+                    this._lastEzanPrayer = prayerTime;
+                    this._playEzan(prayerName);
+                    break;
+                }
             }
         }
     }
@@ -1023,6 +1059,52 @@ _parseCalendarInfo(html) {
             formattedEn: `${diff.hours}h ${diff.minutes}m ${diff.seconds}s`
         };
     }
+    _playEzan(prayerName) {
+        if (!this._ezanEnabled) return;
+
+        if (this._isPlayingEzan) {
+            this._debug('Ezan zaten çalıyor, yeni ezan başlatılmıyor');
+            return;
+        }
+
+        try {
+            this._isPlayingEzan = true;
+            const ezanPath = GLib.build_filenamev([this._extension.path, 'sounds', 'ezan.mp3']);
+            const ezanFile = Gio.File.new_for_path(ezanPath);
+
+            if (!ezanFile.query_exists(null)) {
+                console.error('[Herkul] ezan.mp3 dosyası bulunamadı');
+                this._isPlayingEzan = false;
+                return;
+            }
+
+            this._debug(`Vakit girdi bildirim sesi çalınıyor: ${prayerName}`);
+
+            Gst.init(null);
+            this._ezanPlayer = Gst.ElementFactory.make('playbin', 'ezanplayer');
+
+            if (this._ezanPlayer) {
+                const uri = ezanFile.get_uri();
+                this._ezanPlayer.set_property('uri', uri);
+                this._ezanPlayer.set_state(Gst.State.PLAYING);
+
+                const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 120, () => {
+                    if (this._ezanPlayer) {
+                        this._ezanPlayer.set_state(Gst.State.NULL);
+                        this._ezanPlayer = null;
+                    }
+                    this._isPlayingEzan = false;
+                    this._debug('Ezan sesi tamamlandı');
+                    return GLib.SOURCE_REMOVE;
+                });
+                this._activeTimers.add(timerId);
+            }
+        } catch (error) {
+            console.error(`[Herkul] Ezan çalınırken hata oluştu: ${error}`);
+            this._isPlayingEzan = false;
+        }
+    }
+
     _showNotification(prayerName, minutesLeft) {
         if (!this._notificationsEnabled) return;
         if (minutesLeft < 15 || minutesLeft > 20) {
@@ -1152,6 +1234,10 @@ _parseCalendarInfo(html) {
         if (this._radioPlayer) {
             this._radioPlayer.set_state(Gst.State.NULL);
             this._radioPlayer = null;
+        }
+        if (this._ezanPlayer) {
+            this._ezanPlayer.set_state(Gst.State.NULL);
+            this._ezanPlayer = null;
         }
         this._cleanupTimers();
         this._clearTimers();

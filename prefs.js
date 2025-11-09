@@ -115,8 +115,8 @@ export default class HerkulPreferences extends ExtensionPreferences {
 
 
         const soundFiles = [
-            { id: 'call.mp3', name: _("Davud Ses 1 (call.mp3)") },
-            { id: 'call_1.mp3', name: _("Ayine Ses 2 (call_1.mp3)") }
+            { id: 'call.mp3', name: _("Ayine Ses 1 (call.mp3)") },
+            { id: 'call_1.mp3', name: _("Davud Ses 2 (call_1.mp3)") }
         ];
 
         const soundFileNames = soundFiles.map(sound => sound.name);
@@ -144,6 +144,20 @@ export default class HerkulPreferences extends ExtensionPreferences {
         });
 
         notifyGroup.add(notificationSoundRow);
+
+        const ezanSwitch = new Adw.ActionRow({
+            title: _('Vakit girdiğini belirten sesli uyarı'),
+            subtitle: _('Namaz vakti girince sesli bildir')
+        });
+        const ezanToggle = new Gtk.Switch({
+            active: settings.get_boolean('ezan-enabled'),
+            valign: Gtk.Align.CENTER,
+        });
+        ezanToggle.connect('notify::active', (widget) => {
+            settings.set_boolean('ezan-enabled', widget.get_active());
+        });
+        ezanSwitch.add_suffix(ezanToggle);
+        notifyGroup.add(ezanSwitch);
 
 
         const debugSwitch = new Adw.ActionRow({
