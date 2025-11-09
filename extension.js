@@ -1196,22 +1196,6 @@ _parseCalendarInfo(html) {
             return null;
         }
     }
-    _startUpdating() {
-        if (this._isDestroyed) {
-            return;
-        }
-        try {
-            this._fetchPrayerTimes();
-            this._cleanupTimers();
-            const timerId = this._addTimer(() => {
-                this._updateDisplay();
-                return GLib.SOURCE_CONTINUE;
-            }, 60);
-            this._activeTimers.add(timerId);
-        } catch (error) {
-            console.error(`[Herkul] Güncellemeler başlatılırken hata oluştu: ${error}`);
-        }
-    }
     destroy() {
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
