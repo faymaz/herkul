@@ -19,6 +19,7 @@ const WEATHER_ICONS = {
     'Fog': '🌫️'
 };
 const API_BASE = 'https://api.openweathermap.org/data/2.5/weather';
+const ALADHAN_API_BASE = 'http://api.aladhan.com/v1/timings';
 const calculateTimeDifference = (currentTime, targetTime, isNextDay = false) => {
     let [targetHour, targetMinute] = targetTime.split(':').map(Number);
     let currentHour = currentTime.get_hour();
@@ -793,11 +794,74 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(humidityItem);
         this.menu.addMenuItem(windItem);
     }
+    async _fetchPrayerTimesFromAladhan() {
+        this._debug('Aladhan API\'den namaz vakitleri alınıyor (fallback)...');
+
+        const city = this._findCityByName(this._selectedCity);
+        if (!city || !city.latitude || !city.longitude) {
+            console.error('[Herkul] Şehir koordinatları bulunamadı:', this._selectedCity);
+            return false;
+        }
+
+        try {
+            const timestamp = Math.floor(Date.now() / 1000);
+            // method=13 = Turkey Diyanet Affairs hesaplama metodu
+            const url = `${ALADHAN_API_BASE}/${timestamp}?latitude=${city.latitude}&longitude=${city.longitude}&method=13`;
+
+            this._debug(`Aladhan URL: ${url}`);
+
+            let message = Soup.Message.new('GET', url);
+            let bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+
+            if (message.status_code === 200) {
+                const data = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+
+                if (data.code === 200 && data.data && data.data.timings) {
+                    const timings = data.data.timings;
+
+                    this._prayerTimes = {
+                        'imsak': timings.Imsak,
+                        'gunes': timings.Sunrise,
+                        'ogle': timings.Dhuhr,
+                        'ikindi': timings.Asr,
+                        'aksam': timings.Maghrib,
+                        'yatsi': timings.Isha
+                    };
+
+                    // Hicri takvim bilgisi
+                    if (data.data.date && data.data.date.hijri) {
+                        const hijri = data.data.date.hijri;
+                        this._calendarInfo.hijri = `${hijri.day} ${hijri.month.tr} ${hijri.year}`;
+                    }
+
+                    // Miladi takvim bilgisi
+                    if (data.data.date && data.data.date.gregorian) {
+                        const gregorian = data.data.date.gregorian;
+                        this._calendarInfo.gregorian = `${gregorian.day} ${gregorian.month.tr} ${gregorian.year}`;
+                    }
+
+                    this._debug('Aladhan API\'den namaz vakitleri başarıyla alındı');
+                    this._updateDisplay();
+                    this._fetchingIndicator.visible = false;
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('[Herkul] Aladhan API hatası:', error);
+        }
+
+        return false;
+    }
+
     _fetchPrayerTimes(retryCount = 0) {
     if (retryCount >= 3) {
-        console.error('[Herkul] Namaz vakitleri alınamadı, maksimum deneme aşıldı.');
-        this._label.text = 'Bağlantı hatası';
-        this._fetchingIndicator.visible = false;
+        console.error('[Herkul] Diyanet\'ten namaz vakitleri alınamadı, Aladhan API deneniyor...');
+        this._fetchPrayerTimesFromAladhan().then(success => {
+            if (!success) {
+                this._label.text = 'Bağlantı hatası';
+                this._fetchingIndicator.visible = false;
+            }
+        });
         return;
     }
 
@@ -816,8 +880,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         console.error('[Herkul] Soup.Message oluşturulamadı');
         return;
     }
-    message.request_headers.append('Accept', 'text/html,application/xhtml+xml');
-    message.request_headers.append('Accept-Language', 'tr-TR,tr;q=0.9');
+    // Daha fazla header ekleyerek gerçek tarayıcıyı daha iyi taklit ediyoruz
+    message.request_headers.append('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8');
+    message.request_headers.append('Accept-Language', 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7');
+    message.request_headers.append('Accept-Encoding', 'gzip, deflate, br');
+    message.request_headers.append('DNT', '1');
+    message.request_headers.append('Connection', 'keep-alive');
+    message.request_headers.append('Upgrade-Insecure-Requests', '1');
+    message.request_headers.append('Sec-Fetch-Dest', 'document');
+    message.request_headers.append('Sec-Fetch-Mode', 'navigate');
+    message.request_headers.append('Sec-Fetch-Site', 'none');
+    message.request_headers.append('Cache-Control', 'max-age=0');
     this._fetchingIndicator.visible = true;
     this._debug('HTTP isteği gönderiliyor...');
     this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
@@ -1178,22 +1251,6 @@ _parseCalendarInfo(html) {
         } catch (error) {
             console.error(`[Herkul] Zamanlayıcı eklenirken hata oluştu: ${error}`);
             return null;
-        }
-    }
-    _startUpdating() {
-        if (this._isDestroyed) {
-            return;
-        }
-        try {
-            this._fetchPrayerTimes();
-            this._cleanupTimers();
-            const timerId = this._addTimer(() => {
-                this._updateDisplay();
-                return GLib.SOURCE_CONTINUE;
-            }, 60);
-            this._activeTimers.add(timerId);
-        } catch (error) {
-            console.error(`[Herkul] Güncellemeler başlatılırken hata oluştu: ${error}`);
         }
     }
     destroy() {
