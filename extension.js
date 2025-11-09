@@ -512,11 +512,12 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         }
     }
     _initHttpSession() {
+    // Daha güncel ve yaygın bir User-Agent (Chrome 131, Ocak 2025)
     this._httpSession = new Soup.Session({
         timeout: 30,
-        user_agent: 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/119.0'
+        user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     });
-   
+
 }
 
     _showLoading() {
@@ -794,8 +795,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(windItem);
     }
     _fetchPrayerTimes(retryCount = 0) {
-    if (retryCount >= 3) {
-        console.error('[Herkul] Namaz vakitleri alınamadı, maksimum deneme aşıldı.');
+    if (retryCount >= 5) {
+        console.error('[Herkul] Namaz vakitleri alınamadı, maksimum deneme aşıldı (5 deneme).');
         this._label.text = 'Bağlantı hatası';
         this._fetchingIndicator.visible = false;
         return;
@@ -816,8 +817,20 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         console.error('[Herkul] Soup.Message oluşturulamadı');
         return;
     }
-    message.request_headers.append('Accept', 'text/html,application/xhtml+xml');
-    message.request_headers.append('Accept-Language', 'tr-TR,tr;q=0.9');
+
+    // Chrome tarayıcısının gönderdiği gerçek header'lar
+    message.request_headers.append('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7');
+    message.request_headers.append('Accept-Language', 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7');
+    message.request_headers.append('Accept-Encoding', 'gzip, deflate, br, zstd');
+    message.request_headers.append('Cache-Control', 'max-age=0');
+    message.request_headers.append('Sec-Ch-Ua', '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"');
+    message.request_headers.append('Sec-Ch-Ua-Mobile', '?0');
+    message.request_headers.append('Sec-Ch-Ua-Platform', '"Linux"');
+    message.request_headers.append('Sec-Fetch-Dest', 'document');
+    message.request_headers.append('Sec-Fetch-Mode', 'navigate');
+    message.request_headers.append('Sec-Fetch-Site', 'none');
+    message.request_headers.append('Sec-Fetch-User', '?1');
+    message.request_headers.append('Upgrade-Insecure-Requests', '1');
     this._fetchingIndicator.visible = true;
     this._debug('HTTP isteği gönderiliyor...');
     this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
@@ -856,8 +869,11 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         } catch (error) {
             console.error(`[Herkul] İstek hatası (deneme ${retryCount}):`, error.message);
 
+            // Bot gibi görünmemek için rastgele bekleme süresi (3-7 saniye)
+            const randomDelay = 3000 + Math.floor(Math.random() * 4000);
+            this._debug(`Tekrar denemeden önce ${randomDelay}ms bekleniyor...`);
 
-            const retryTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+            const retryTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, randomDelay, () => {
                 if (!this._isDestroyed) {
                     this._fetchPrayerTimes(retryCount + 1);
                 }
