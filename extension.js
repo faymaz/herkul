@@ -4,6 +4,7 @@ import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Gst from 'gi://Gst';
+import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -118,6 +119,11 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this._maxRetries = 3;
         this._radioPlaying = false;
         this._radioPlayer = null;
+        this._weatherData = null;
+        this._currentWeatherIcon = '🌤️';
+        this._currentTemp = '';
+        this._cachedNextPrayer = null;
+        this._cachedTimeInfo = null;
         this._initHttpSession();
         this._radioStations = [
             {
@@ -168,19 +174,19 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             y_expand: true,
             y_align: 2
         });
-        
+
         this._tempLabel = new St.Label({
             text: '',
             y_expand: true,
             y_align: 2
         });
-    
+
         this._label = new St.Label({
             text: 'Loading...',
             y_expand: true,
             y_align: 2
         });
-    
+
         this._fetchingIndicator = new St.Label({
             text: '⟳',
             y_expand: true,
@@ -188,32 +194,97 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             style_class: 'loading-indicator',
             visible: false
         });
-        
+
         this._cityLabel = new St.Label({
             text: this._selectedCity,
             y_expand: true,
             y_align: 2
         });
-        
-        this._fetchingIndicator = new St.Label({
-            text: '⟳',
-            y_expand: true,
-            y_align: 2,
-            style_class: 'loading-indicator',
-            visible: false
-        });
-    
+
+        // Panel box - show only icon and prayer time for compact display
         let hbox = new St.BoxLayout({style_class: 'panel-status-menu-box'});
         hbox.add_child(this._icon);
-        hbox.add_child(this._cityLabel);
-        hbox.add_child(this._weatherIcon);
-        hbox.add_child(this._tempLabel);
         hbox.add_child(this._label);
         hbox.add_child(this._fetchingIndicator);
         this.add_child(hbox);
+
+        // Create hover tooltip for detailed information
+        this._createTooltip();
+        this._setupHoverEvents();
+
         this._buildMenu();
         this._startUpdating();
     }
+    _createTooltip() {
+        // Create tooltip container
+        this._tooltip = new St.BoxLayout({
+            style_class: 'herkul-tooltip',
+            style: 'background-color: rgba(0, 0, 0, 0.8); border-radius: 8px; padding: 10px 15px;',
+            vertical: false,
+            visible: false
+        });
+
+        // Tooltip content
+        this._tooltipLabel = new St.Label({
+            style: 'color: white; font-size: 12px;',
+            text: ''
+        });
+
+        this._tooltip.add_child(this._tooltipLabel);
+        Main.layoutManager.addChrome(this._tooltip);
+        this._tooltip.hide();
+    }
+
+    _setupHoverEvents() {
+        // Connect to hover events
+        this.connect('enter-event', () => {
+            this._showTooltip();
+        });
+
+        this.connect('leave-event', () => {
+            this._hideTooltip();
+        });
+    }
+
+    _showTooltip() {
+        if (this._isDestroyed || !this._tooltip) return;
+
+        try {
+            // Build tooltip content using cached data for consistency
+            let tooltipText = `📍 ${this._selectedCity}`;
+
+            // Add weather info if available
+            if (this._currentTemp && this._currentWeatherIcon) {
+                tooltipText += `\n${this._currentWeatherIcon} ${this._currentTemp}`;
+            }
+
+            // Add next prayer info using cached data for consistency with panel display
+            if (this._cachedNextPrayer && this._cachedTimeInfo) {
+                tooltipText += `\n🕌 ${this._cachedNextPrayer.name}: ${this._cachedTimeInfo.formatted}`;
+            }
+
+            this._tooltipLabel.text = tooltipText;
+
+            // Position tooltip near the button
+            const [stageX, stageY] = this.get_transformed_position();
+            const [buttonWidth, buttonHeight] = this.get_transformed_size();
+            this._tooltip.set_position(
+                Math.floor(stageX),
+                Math.floor(stageY + buttonHeight + 5)
+            );
+
+            this._tooltip.show();
+        } catch (error) {
+            console.error('[Herkul] Tooltip gösterme hatası:', error);
+        }
+    }
+
+    _hideTooltip() {
+        if (this._tooltip && !this._isDestroyed) {
+            this._tooltip.hide();
+        }
+    }
+
     _findCityByName(cityName) {
         if (!this._citiesData || !this._citiesData.cities) {
             return null;
@@ -652,16 +723,16 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
         }
 
-       
+
         let prayerNames = getPrayerMap();
         if (this._prayerTimes && Object.keys(this._prayerTimes).length > 0) {
             Object.entries(this._prayerTimes).forEach(([name, time]) => {
                 let prayerName = prayerNames[name];
                 let menuItem = new PopupMenu.PopupMenuItem(`${prayerName}: ${time}`);
                 this.menu.addMenuItem(menuItem);
-                this._updateWeatherMenu();
             });
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            this._updateWeatherMenu();
         }
         
        
@@ -734,9 +805,9 @@ class PrayerTimesIndicator extends PanelMenu.Button {
                 }
             });
         }
-        this.menu.addMenuItem(cityItem);        
+        this.menu.addMenuItem(cityItem);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        const settingsButton = new PopupMenu.PopupMenuItem(_('Ayarlar'));
+        const settingsButton = new PopupMenu.PopupMenuItem(_('⚙️ Ayarlar'));
         settingsButton.connect('activate', () => {
             if (this._extension) {
                 this._extension.openPreferences();
@@ -750,7 +821,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         const cityData = this._findCityByName(this._selectedCity);
         if (!cityData?.weatherId) return;
         try {
-            const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric`;
+            const url = `${API_BASE}?id=${cityData.weatherId}&appid=${apiKey}&units=metric&lang=tr`;
             let message = Soup.Message.new('GET', url);
             let bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
             if (message.status_code === 200) {
@@ -767,10 +838,17 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             const weather = data.weather[0];
             const temp = Math.round(data.main.temp);
             const icon = WEATHER_ICONS[weather.main] || '🌤️';
-            if (this._weatherIcon?.get_parent()) {
+
+            // Store weather data for use in tooltip
+            this._weatherData = data;
+            this._currentWeatherIcon = icon;
+            this._currentTemp = `${temp}°C`;
+
+            // Update labels if they exist
+            if (this._weatherIcon) {
                 this._weatherIcon.text = icon;
             }
-            if (this._tempLabel?.get_parent()) {
+            if (this._tempLabel) {
                 this._tempLabel.text = `${temp}°C`;
             }
         } catch (error) {
@@ -784,11 +862,11 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         const feelsLike = Math.round(this._weatherData.main.feels_like);
         const humidity = this._weatherData.main.humidity;
         const windSpeed = this._weatherData.wind.speed;
-        const weatherItem = new PopupMenu.PopupMenuItem(`${weather.description}`);
-        const tempItem = new PopupMenu.PopupMenuItem(`Temperature: ${temp}°C (Feels like: ${feelsLike}°C)`);
-        const humidityItem = new PopupMenu.PopupMenuItem(`Humidity: ${humidity}%`);
-        const windItem = new PopupMenu.PopupMenuItem(`Wind: ${windSpeed} m/s`);
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        const icon = WEATHER_ICONS[weather.main] || '🌤️';
+        const weatherItem = new PopupMenu.PopupMenuItem(`${icon} ${weather.description}`);
+        const tempItem = new PopupMenu.PopupMenuItem(`🌡️ Sıcaklık: ${temp}°C (Hissedilen: ${feelsLike}°C)`);
+        const humidityItem = new PopupMenu.PopupMenuItem(`💧 Nem: ${humidity}%`);
+        const windItem = new PopupMenu.PopupMenuItem(`💨 Rüzgar: ${windSpeed} m/s`);
         this.menu.addMenuItem(weatherItem);
         this.menu.addMenuItem(tempItem);
         this.menu.addMenuItem(humidityItem);
@@ -863,6 +941,7 @@ class PrayerTimesIndicator extends PanelMenu.Button {
             }
 
             this._updateDisplay();
+            this._rebuildMenu();
             this._retryCount = 0;
             this._fetchingIndicator.visible = false;
 
@@ -943,20 +1022,34 @@ _parsePrayerTimes(html) {
 
     throw new Error('Cevapta namaz vakitleri bulunamadı');
 }
+_decodeHtmlEntities(text) {
+    if (!text) return text;
+
+    // HTML entities'i decode et
+    return text
+        .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+        .replace(/&#x([0-9a-f]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+}
+
 _parseCalendarInfo(html) {
     const calendarInfo = {
         hijri: null,
         gregorian: null
     };
-   
+
     const hijriMatch = html.match(/<div[^>]*class="ti-hicri"[^>]*>([^<]+)<\/div>/i);
     if (hijriMatch && hijriMatch[1]) {
-        calendarInfo.hijri = hijriMatch[1].trim();
+        calendarInfo.hijri = this._decodeHtmlEntities(hijriMatch[1].trim());
     }
-   
+
     const gregorianMatch = html.match(/<div[^>]*class="ti-miladi"[^>]*>([^<]+)<\/div>/i);
     if (gregorianMatch && gregorianMatch[1]) {
-        calendarInfo.gregorian = gregorianMatch[1].trim();
+        calendarInfo.gregorian = this._decodeHtmlEntities(gregorianMatch[1].trim());
     }
 
     return calendarInfo;
@@ -975,6 +1068,10 @@ _parseCalendarInfo(html) {
         if (!nextPrayer) return;
         try {
             const timeInfo = this._calculateTimeLeft(nextPrayer.time, nextPrayer.isNextDay);
+
+            // Cache the next prayer and time info for use in tooltip
+            this._cachedNextPrayer = nextPrayer;
+            this._cachedTimeInfo = timeInfo;
 
             if (this._label && !this._label.is_finalized?.()) {
                 this._label.text = `${nextPrayer.name}: ${timeInfo.formatted}`;
@@ -1030,7 +1127,14 @@ _parseCalendarInfo(html) {
         }
     }
     _cleanupUI() {
-        ['_label', '_icon', '_fetchingIndicator', '_weatherIcon', '_tempLabel', '_cityLabel'].forEach(widgetName => {
+        // Cleanup tooltip
+        if (this._tooltip) {
+            Main.layoutManager.removeChrome(this._tooltip);
+            this._tooltip.destroy();
+            this._tooltip = null;
+        }
+
+        ['_label', '_icon', '_fetchingIndicator', '_weatherIcon', '_tempLabel', '_cityLabel', '_tooltipLabel'].forEach(widgetName => {
             if (this[widgetName] && !this[widgetName].is_finalized?.()) {
                 this[widgetName].destroy();
                 this[widgetName] = null;

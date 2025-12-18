@@ -42,3 +42,18 @@
     direction: rtl;
     text-align: right;
 }
+
+/* Hover tooltip styling */
+.herkul-tooltip {
+    background-color: rgba(0, 0, 0, 0.85);
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.herkul-tooltip StLabel {
+    color: white;
+    font-size: 12px;
+    line-height: 1.5;
+}
