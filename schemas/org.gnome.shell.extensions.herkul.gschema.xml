@@ -46,5 +46,10 @@
       <summary>Vakit girdiğini belirten sesli uyarı</summary>
       <description>Namaz vakti girince sesli bildir</description>
     </key>
+    <key name="cache-duration" type="s">
+      <default>'yearly'</default>
+      <summary>Cache Süresi</summary>
+      <description>Namaz vakitlerinin ne kadar süre önbelleğe alınacağı: instant, daily, weekly, monthly, yearly</description>
+    </key>
   </schema>
 </schemalist>

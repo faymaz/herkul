@@ -863,7 +863,8 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         const humidity = this._weatherData.main.humidity;
         const windSpeed = this._weatherData.wind.speed;
         const icon = WEATHER_ICONS[weather.main] || '🌤️';
-        const weatherItem = new PopupMenu.PopupMenuItem(`${icon} ${weather.description}`);
+        const desc = weather.description ? weather.description.charAt(0).toUpperCase() + weather.description.slice(1) : weather.description;
+        const weatherItem = new PopupMenu.PopupMenuItem(`${icon} ${desc}`);
         const tempItem = new PopupMenu.PopupMenuItem(`🌡️ Sıcaklık: ${temp}°C (Hissedilen: ${feelsLike}°C)`);
         const humidityItem = new PopupMenu.PopupMenuItem(`💧 Nem: ${humidity}%`);
         const windItem = new PopupMenu.PopupMenuItem(`💨 Rüzgar: ${windSpeed} m/s`);
@@ -872,7 +873,147 @@ class PrayerTimesIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(humidityItem);
         this.menu.addMenuItem(windItem);
     }
+    _getCachePath() {
+        return `${GLib.get_user_cache_dir()}/herkul-prayer-cache.json`;
+    }
+
+    _getCacheDuration() {
+        return this._settings.get_string('cache-duration') || 'yearly';
+    }
+
+    _loadFromCache() {
+        try {
+            const duration = this._getCacheDuration();
+            if (duration === 'instant') return null;
+
+            const file = Gio.File.new_for_path(this._getCachePath());
+            if (!file.query_exists(null)) return null;
+            const [, contents] = file.load_contents(null);
+            const data = JSON.parse(new TextDecoder().decode(contents));
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+            // Çok günlük format (haftalık / aylık / yıllık)
+            if (data.days && data.days[todayStr]) {
+                const times = data.days[todayStr];
+                if (Object.keys(times).length === 6) {
+                    const dayCount = Object.keys(data.days).length;
+                    this._debug(`Cache'den yüklendi (${dayCount} günlük, mod: ${duration}): ${todayStr}`);
+                    const calendarInfo = (data.calendarInfo && data.calendarInfo[todayStr]) || {};
+                    return { times, calendarInfo };
+                }
+            }
+
+            // Eski tek günlük format (geriye dönük uyum)
+            if (data.date === todayStr && data.times && Object.keys(data.times).length === 6) {
+                this._debug(`Cache'den yüklendi (günlük eski format): ${todayStr}`);
+                return { times: data.times, calendarInfo: data.calendarInfo || {} };
+            }
+
+            return null;
+        } catch (e) {
+            this._debug('Cache okuma hatası: ' + e.message);
+            return null;
+        }
+    }
+
+    _saveToCache(times, calendarInfo, weeklyDays, weeklyCalendarInfo) {
+        try {
+            const duration = this._getCacheDuration();
+            if (duration === 'instant') return;
+
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+            const maxDays = { daily: 1, weekly: 7, monthly: 30, yearly: 365 }[duration] ?? 365;
+
+            let cacheData;
+            if (weeklyDays && Object.keys(weeklyDays).length > 1) {
+                // Ayar süresine göre gün sayısını sınırla
+                const filtered = {};
+                const filteredCal = {};
+                let count = 0;
+                for (const d of Object.keys(weeklyDays).sort()) {
+                    if (d >= todayStr && count < maxDays) {
+                        filtered[d] = weeklyDays[d];
+                        if (weeklyCalendarInfo && weeklyCalendarInfo[d])
+                            filteredCal[d] = weeklyCalendarInfo[d];
+                        count++;
+                    }
+                }
+                const sortedDates = Object.keys(filtered).sort();
+                cacheData = {
+                    periodStart: sortedDates[0],
+                    periodEnd: sortedDates[sortedDates.length - 1],
+                    days: filtered,
+                    calendarInfo: filteredCal
+                };
+                this._debug(`Cache kaydedildi (${duration}): ${count} gün (${sortedDates[0]} → ${sortedDates[sortedDates.length - 1]})`);
+            } else {
+                cacheData = { date: todayStr, times, calendarInfo: calendarInfo || {} };
+                this._debug(`Cache kaydedildi (${duration}, tek gün): ${todayStr}`);
+            }
+            const file = Gio.File.new_for_path(this._getCachePath());
+            file.replace_contents(new TextEncoder().encode(JSON.stringify(cacheData)), null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+        } catch (e) {
+            this._debug('Cache yazma hatası: ' + e.message);
+        }
+    }
+
+    _parseWeeklyPrayerTimes(html) {
+        const monthMap = {
+            'Ocak': '01', 'Şubat': '02', 'Mart': '03', 'Nisan': '04',
+            'Mayıs': '05', 'Haziran': '06', 'Temmuz': '07', 'Ağustos': '08',
+            'Eylül': '09', 'Ekim': '10', 'Kasım': '11', 'Aralık': '12'
+        };
+        const prayerKeys = ['imsak', 'gunes', 'ogle', 'ikindi', 'aksam', 'yatsi'];
+        const weeklyDays = {};
+        const weeklyCalendar = {};
+
+        // <tr> satırlarını tara — her satırda Türkçe tarih + 6 vakit var mı diye bak
+        const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+        for (const row of html.matchAll(rowPattern)) {
+            const rowHtml = row[1];
+            const dateMatch = rowHtml.match(/(\d{1,2})\s+(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(\d{4})/);
+            if (!dateMatch) continue;
+
+            const dateStr = `${dateMatch[3]}-${monthMap[dateMatch[2]]}-${dateMatch[1].padStart(2,'0')}`;
+            const times = Array.from(rowHtml.matchAll(/\b([0-2]\d:[0-5]\d)\b/g)).map(m => m[1]);
+            if (times.length < 6) continue;
+
+            const lastSix = times.slice(-6);
+            const dayTimes = {};
+            prayerKeys.forEach((k, i) => { dayTimes[k] = lastSix[i]; });
+            weeklyDays[dateStr] = dayTimes;
+
+            const hijriMatch = rowHtml.match(/(\d+)\s+(Muharrem|Safer|Rebiulevvel|Rebiulahir|Cemaziyelevvel|Cemaziyelahir|Recep|Şaban|Ramazan|Şevval|Zilkade|Zilhicce)\s+(\d{4})/);
+            // Miladi tarih: gün + Türkçe ay + yıl (dateMatch[0]) + gün adı varsa ekle
+            const dayNameMatch = rowHtml.match(/\b(Pazartesi|Salı|Çarşamba|Perşembe|Cuma|Cumartesi|Pazar)\b/);
+            const gregorianFull = dayNameMatch
+                ? `${dateMatch[0]} ${dayNameMatch[1]}`
+                : dateMatch[0];
+            weeklyCalendar[dateStr] = {
+                hijri: hijriMatch ? hijriMatch[0] : null,
+                gregorian: gregorianFull
+            };
+        }
+
+        return Object.keys(weeklyDays).length >= 2 ? { days: weeklyDays, calendarInfo: weeklyCalendar } : null;
+    }
+
     _fetchPrayerTimes(retryCount = 0) {
+    if (retryCount === 0) {
+        const cached = this._loadFromCache();
+        if (cached) {
+            this._prayerTimes = cached.times;
+            this._calendarInfo = cached.calendarInfo;
+            this._updateDisplay();
+            this._rebuildMenu();
+            this._fetchingIndicator.visible = false;
+            return;
+        }
+    }
+
     if (retryCount >= 5) {
         console.error('[Herkul] Namaz vakitleri alınamadı, maksimum deneme aşıldı (5 deneme).');
         this._label.text = 'Bağlantı hatası';
@@ -928,11 +1069,18 @@ class PrayerTimesIndicator extends PanelMenu.Button {
            
             const calendarInfo = this._parseCalendarInfo(html);
 
-           
+
             this._prayerTimes = times;
             this._calendarInfo = calendarInfo;
 
-           
+            const weekly = this._parseWeeklyPrayerTimes(html);
+            if (weekly) {
+                this._saveToCache(times, calendarInfo, weekly.days, weekly.calendarInfo);
+            } else {
+                this._saveToCache(times, calendarInfo);
+            }
+
+
             if (calendarInfo.hijri) {
                 this._debug(`Hicri takvim: ${calendarInfo.hijri}`);
             }
@@ -1049,7 +1197,10 @@ _parseCalendarInfo(html) {
 
     const gregorianMatch = html.match(/<div[^>]*class="ti-miladi"[^>]*>([^<]+)<\/div>/i);
     if (gregorianMatch && gregorianMatch[1]) {
-        calendarInfo.gregorian = this._decodeHtmlEntities(gregorianMatch[1].trim());
+        // ti-miladi "25 Şubat Çarşamba" döndürür (yıl yok) — bugünün yılını ekle
+        const raw = this._decodeHtmlEntities(gregorianMatch[1].trim());
+        const year = new Date().getFullYear();
+        calendarInfo.gregorian = `${raw} ${year}`;
     }
 
     return calendarInfo;

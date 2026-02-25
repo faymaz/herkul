@@ -17,11 +17,13 @@ export default class HerkulPreferences extends ExtensionPreferences {
         const weatherGroup = this._createWeatherGroup(settings);
         const radioGroup = this._createRadioGroup(settings);
         const notifyGroup = this._createNotificationGroup(settings);
-        
+        const cacheGroup = this._createCacheGroup(settings);
+
         page.add(cityGroup);
         page.add(weatherGroup);
         page.add(radioGroup);
         page.add(notifyGroup);
+        page.add(cacheGroup);
         window.add(page);
     }
     
@@ -177,6 +179,38 @@ export default class HerkulPreferences extends ExtensionPreferences {
         return notifyGroup;
     }
     
+    _createCacheGroup(settings) {
+        const cacheGroup = new Adw.PreferencesGroup({
+            title: _('Namaz Vakitleri Önbelleği'),
+            description: _('Diyanet\'ten alınan vakitlerin ne kadar süre saklanacağını seçin')
+        });
+
+        const cacheOptions = [
+            { id: 'instant',  name: _('Anlık — Her güncellemede Diyanet\'ten al (önbelleksiz)') },
+            { id: 'daily',    name: _('Günlük — Gün boyunca önbellekte tut') },
+            { id: 'weekly',   name: _('Haftalık — 7 günlük önbellek') },
+            { id: 'monthly',  name: _('Aylık — 30 günlük önbellek') },
+            { id: 'yearly',   name: _('Yıllık — Yıl sonuna kadar önbellekte tut (önerilen)') },
+        ];
+
+        const cacheRow = new Adw.ComboRow({
+            title: _('Önbellek Süresi'),
+            subtitle: _('Uzun süre seçmek WAF engellerine karşı koruma sağlar'),
+            model: new Gtk.StringList({ strings: cacheOptions.map(o => o.name) })
+        });
+
+        const currentDuration = settings.get_string('cache-duration');
+        const idx = cacheOptions.findIndex(o => o.id === currentDuration);
+        if (idx !== -1) cacheRow.selected = idx;
+
+        cacheRow.connect('notify::selected', (widget) => {
+            settings.set_string('cache-duration', cacheOptions[widget.selected].id);
+        });
+
+        cacheGroup.add(cacheRow);
+        return cacheGroup;
+    }
+
     _createCityGroup(settings) {
         const citiesGroup = new Adw.PreferencesGroup({
             title: _('Varsayılan Şehir'),
