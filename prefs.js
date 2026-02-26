@@ -9,22 +9,40 @@ export default class HerkulPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
         const settings = this.getSettings();
-        const page = new Adw.PreferencesPage({
-            title: _('Namaz Vakitleri Ayarları'),
-            icon_name: 'preferences-system-time-symbolic',
-        });
-        const cityGroup = this._createCityGroup(settings);
-        const weatherGroup = this._createWeatherGroup(settings);
-        const radioGroup = this._createRadioGroup(settings);
-        const notifyGroup = this._createNotificationGroup(settings);
-        const cacheGroup = this._createCacheGroup(settings);
 
-        page.add(cityGroup);
-        page.add(weatherGroup);
-        page.add(radioGroup);
-        page.add(notifyGroup);
-        page.add(cacheGroup);
-        window.add(page);
+        // Sekme 1: Genel
+        const generalPage = new Adw.PreferencesPage({
+            title: _('Genel'),
+            icon_name: 'preferences-system-symbolic',
+        });
+        generalPage.add(this._createCityGroup(settings));
+        window.add(generalPage);
+
+        // Sekme 2: Bildirimler
+        const notifyPage = new Adw.PreferencesPage({
+            title: _('Bildirimler'),
+            icon_name: 'preferences-system-notifications-symbolic',
+        });
+        notifyPage.add(this._createNotificationGroup(settings));
+        window.add(notifyPage);
+
+        // Sekme 3: Radyo
+        const radioPage = new Adw.PreferencesPage({
+            title: _('Radyo'),
+            icon_name: 'audio-x-generic-symbolic',
+        });
+        radioPage.add(this._createRadioGroup(settings));
+        window.add(radioPage);
+
+        // Sekme 4: Gelişmiş
+        const advancedPage = new Adw.PreferencesPage({
+            title: _('Gelişmiş'),
+            icon_name: 'preferences-other-symbolic',
+        });
+        advancedPage.add(this._createWeatherGroup(settings));
+        advancedPage.add(this._createCacheGroup(settings));
+        advancedPage.add(this._createDebugGroup(settings));
+        window.add(advancedPage);
     }
     
     _createRadioGroup(settings) {
@@ -162,9 +180,17 @@ export default class HerkulPreferences extends ExtensionPreferences {
         notifyGroup.add(ezanSwitch);
 
 
+        return notifyGroup;
+    }
+
+    _createDebugGroup(settings) {
+        const debugGroup = new Adw.PreferencesGroup({
+            title: _('Geliştirici'),
+            description: _('Geliştirici seçenekleri')
+        });
         const debugSwitch = new Adw.ActionRow({
             title: _('Debug Modunu Etkinleştir'),
-            subtitle: _('Debug loglarını journalctl çıktısında göster (geliştiriciler için)')
+            subtitle: _('Debug loglarını journalctl çıktısında göster')
         });
         const debugToggle = new Gtk.Switch({
             active: settings.get_boolean('debug-enabled'),
@@ -174,9 +200,8 @@ export default class HerkulPreferences extends ExtensionPreferences {
             settings.set_boolean('debug-enabled', widget.get_active());
         });
         debugSwitch.add_suffix(debugToggle);
-        notifyGroup.add(debugSwitch);
-
-        return notifyGroup;
+        debugGroup.add(debugSwitch);
+        return debugGroup;
     }
     
     _createCacheGroup(settings) {
