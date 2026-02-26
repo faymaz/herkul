@@ -27,6 +27,7 @@ Herkul, GNOME masaüstü ortamı için geliştirilmiş bir shell uzantısıdır.
 - 🎨 GNOME Shell temasıyla uyumlu görünüm
 - 🔄 Otomatik güncellenen vakitler
 - ⚙️ Özelleştirilebilir ayarlar
+- 💾 Akıllı önbellekleme sistemi (WAF engellerine karşı koruma)
 
 ## Gereksinimler
 
@@ -79,9 +80,9 @@ Uzantı ayarlarına erişmek için:
 2. Herkul uzantısının yanındaki ayarlar (⚙️) simgesine tıklayın
 
 Ayarlarda şunları özelleştirebilirsiniz:
-- Bildirimler (açık/kapalı)
 - Varsayılan şehir seçimi
-- Dil seçimi (Türkçe/İngilizce/Almanca)
+- Bildirimler ve ses ayarları
+- Önbellek süresi (Anlık / Günlük / Haftalık / Aylık / Yıllık)
 - OpenWeatherMap API anahtarı
 
 ## Desteklenen Şehirler
@@ -115,15 +116,34 @@ Yeni şehirler eklemek istiyorsanız, `cities.json` dosyasını düzenleyebilirs
 
 ## Sorun Giderme
 
-1. Vakitler görünmüyorsa:
-   - İnternet bağlantınızı kontrol edin
-   - Uzantıyı devre dışı bırakıp tekrar etkinleştirin
+### 1. Namaz vakitleri yüklenmiyor
 
-2. Ses çalışmıyorsa:
+Diyanet'in web sitesi zaman zaman otomatik bot koruması (WAF — Web Application Firewall) devreye girerek bağlantıları engelleyebilir. Bu durum özellikle hafta sonları ve yoğun trafik dönemlerinde daha sık yaşanabilir.
+
+**Çözüm: Önbellek süresini artırın**
+
+Uzantı ayarlarını açın → **Gelişmiş** sekmesi → **Önbellek Süresi** → **Yıllık** seçin.
+
+| Önbellek Ayarı | Açıklama |
+|---|---|
+| Anlık | Her güncellemede Diyanet'ten canlı çeker (engellenme riski yüksek) |
+| Günlük | Gün boyunca önbellekten okur |
+| Haftalık | 7 günlük veri önbellekte tutulur |
+| Aylık | 30 günlük veri önbellekte tutulur |
+| **Yıllık** (önerilen) | Yıl sonuna kadar tüm vakitler yerel diskte saklanır, Diyanet'e bağlantı gerektirmez |
+
+Yıllık önbellek seçildiğinde vakitler `~/.cache/herkul-prayer-cache.json` dosyasına kaydedilir. Bir kez başarılı bağlantı kurulduktan sonra WAF engellerinden bağımsız olarak çalışmaya devam eder.
+
+> **Not:** Önbellek dosyası bozulursa veya yenilemek istiyorsanız dosyayı silin, uzantı otomatik olarak yeniden indirecektir:
+> ```bash
+> rm ~/.cache/herkul-prayer-cache.json
+> ```
+
+### 2. Ses çalışmıyor
    - GStreamer'ın kurulu olduğundan emin olun
    - Sistem ses ayarlarını kontrol edin
 
-3. Hava durumu görünmüyorsa:
+### 3. Hava durumu görünmüyor
    - OpenWeatherMap API anahtarının doğru girildiğinden emin olun
    - İnternet bağlantınızı kontrol edin
 
