@@ -1,4 +1,4 @@
-![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.herkul) [![namazvakitleri.diyanet.gov.tr Status](https://img.shields.io/website?down_color=red&down_message=offline&label=namazvakitleri.diyanet.gov.tr&up_color=green&up_message=online&url=https%3A%2F%2Fnamazvakitleri.diyanet.gov.tr)](https://namazvakitleri.diyanet.gov.tr)
+![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.herkul) [![namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti Status](https://img.shields.io/website?down_color=red&down_message=offline&label=namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti&up_color=green&up_message=online&url=https%3A%2F%2Fhttps://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti)](https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti)
 
 # Herkul GNOME Shell Uzantısı
 
@@ -99,19 +99,19 @@ Yeni şehirler eklemek istiyorsanız, `cities.json` dosyasını düzenleyebilirs
 ```json
 {
   "cities": [
-    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9541/prayer-time-for-istanbul", "weatherId": "745044" },
-    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/prayer-time-for-ankara", "weatherId": "323786" },
+    { "name": "İstanbul", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti/tr-TR/9541/prayer-time-for-istanbul", "weatherId": "745044" },
+    { "name": "Ankara", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti/tr-TR/9206/prayer-time-for-ankara", "weatherId": "323786" },
     //
     // Daha fazla şehir ekleyebilirsiniz...
     //
-    { "name": "Medine", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/16308/medine-icin-namaz-vakti", "weatherId": "109223" },
-    { "name": "Mekke", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/16309/mekke-icin-namaz-vakti", "weatherId": "104515" }
+    { "name": "Medine", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti/tr-TR/16308/medine-icin-namaz-vakti", "weatherId": "109223" },
+    { "name": "Mekke", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti/tr-TR/16309/mekke-icin-namaz-vakti", "weatherId": "104515" }
   ]
 }
 ```
 
 **Not:** Eklediğiniz URL'lerin Diyanet İşleri resmi web sitesindeki doğru sayfalara yönlendirildiğinden emin olun ve weatherId bilgilerinide https://home.openweathermap.org adresinden şehir isimleri bağlantılarından görebilirsiniz. örn. Köln için Cologne, DE sayfasına gidince https://openweathermap.org/city/2886242
-{ "name": "Köln", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/11019/koln-icin-namaz-vakti", "weatherId": "2886242" },
+{ "name": "Köln", "url": "https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti/tr-TR/11019/koln-icin-namaz-vakti", "weatherId": "2886242" },
 
 
 ## Sorun Giderme
