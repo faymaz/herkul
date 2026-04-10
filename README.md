@@ -1,4 +1,4 @@
-![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.Herkul) [![namazvakitleri.diyanet.gov.tr Status](https://img.shields.io/website?down_color=red&down_message=offline&label=namazvakitleri.diyanet.gov.tr&up_color=green&up_message=online&url=https%3A%2F%2Fnamazvakitleri.diyanet.gov.tr)](https://namazvakitleri.diyanet.gov.tr)
+![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.herkul) [![namazvakitleri.diyanet.gov.tr Status](https://img.shields.io/website?down_color=red&down_message=offline&label=namazvakitleri.diyanet.gov.tr&up_color=green&up_message=online&url=https%3A%2F%2Fnamazvakitleri.diyanet.gov.tr)](https://namazvakitleri.diyanet.gov.tr)
 
 # Herkul GNOME Shell Uzantısı
 
