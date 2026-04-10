@@ -1,4 +1,4 @@
-![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.herkul) [![namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti Status](https://img.shields.io/website?down_color=red&down_message=offline&label=namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti&up_color=green&up_message=online&url=https%3A%2F%2Fhttps://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti)](https://namazvakitleri.diyanet.gov.tr/tr-TR/9206/ankara-icin-namaz-vakti)
+![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=faymaz.herkul) 
 
 # Herkul GNOME Shell Uzantısı
 
